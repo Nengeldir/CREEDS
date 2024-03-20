@@ -2,6 +2,7 @@ import lomap
 
 import numpy as np
 from typing import List, Optional
+from tempfile import TemporaryFile
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -38,7 +39,9 @@ class ClusterMaker():
                  fast_: bool = False,
                  links_file_: Optional[str] = None,
                  known_actives_file_: Optional[str] = None,
-                 max_dist_from_actives_: int = 2
+                 max_dist_from_actives_: int = 2,
+                 loadMatrix: Optional[str] = False,
+                 loadFile: Optional[str] = "distance_matrix.npy"
                  ):
         
         self.filePath = filePath
@@ -66,14 +69,20 @@ class ClusterMaker():
                                         )
         
         self.strict, self.loose = self.db_mol.build_matrices()
-        self.sim_data = self.strict.to_numpy_2D_array()
+        if loadMatrix:
+            self.sim_data = np.load(loadFile)
+        else:
+            self.sim_data = self.strict.to_numpy_2D_array()
+            
         self.n_arr = _clean_NaN(self.sim_data)
         self.ID_List = _clean_ID_list(_getID(self.db_mol, self.n_arr))
         self.plotter = Plotter(self.ID_List)
         self.sub_arrs = None
         self.sub_IDs = None
 
-        
+    def saveDistanceMatrix(self, path : str):
+        np.save(path, self.sim_data)
+
     def get_similarity_matrix(self, type : str):
         if type == "strict":
             return self.strict
@@ -448,5 +457,8 @@ class Plotter():
         
 
 if __name__ == "__main__":
-    cmaker = ClusterMaker('../input/')
+    cmaker = ClusterMaker('../input/FreeSolv')
+    cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
     cmaker.create_clusters()
+
+    
