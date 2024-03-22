@@ -1,4 +1,4 @@
-name: himap_env
+name: creeds_env
 channels:
   - conda-forge
 dependencies:
@@ -324,6 +324,4 @@ dependencies:
   - zipp=3.17.0=pyhd8ed1ab_0
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
-  - pip:
-      - himap==0+unknown
 prefix: /home/lconconi/miniforge3/envs/himap_env
