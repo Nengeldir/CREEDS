@@ -9,6 +9,11 @@ import matplotlib.cm as cm
 import matplotlib.backends.backend_pdf
 import matplotlib.ticker as tick
 
+from rdkit import Chem
+from rdkit.Chem import rdMolAlign
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdFMCS
+
 from utils import _clean_NaN, _getID, _clean_ID_list, _k_dist, _find_max_curvature, _dbscan, _sub_arrays
 
 
@@ -41,10 +46,48 @@ class ClusterMaker():
                  known_actives_file_: Optional[str] = None,
                  max_dist_from_actives_: int = 2,
                  loadMatrix: Optional[str] = False,
-                 loadFile: Optional[str] = "distance_matrix.npy"
+                 loadFile: Optional[str] = "distance_matrix.npy",
+                 output_file: Optional[str] = "clusters.txt",
+                 method: str = "MCMS"
                  ):
-        
+        '''
+        This class is used to create clusters of ligands based on their similarity scores.
+        The similarity scores are calculated using by default the lomap package. The class uses the
+        the similarity score to cluster the ligands based on their relative likeness. 
+        The class has methods to calculate, save and load the distance matrix, create clusters, get the DBMolecules object, and
+        get the clusters. The class uses the Plotter class to plot the distance matrix and
+        the clusters.
+
+            Parameters
+                filePath: str, the path to the directory containing the ligand files. 
+                    It should be a sdf file.
+                parallel_: int, the number of parallel processes to use.
+                verbose_: str, the verbosity level.
+                time_: int, the time limit for the calculation.
+                ecrscore_: float, the ECR score.
+                threed_: bool, whether to use 3D coordinates.
+                max3d_: float, the maximum 3D distance.
+                output_: bool, whether to output the results.
+                name_: str, the name of the output file.
+                output_no_images_: bool, whether to output images.
+                output_no_graph_: bool, whether to output the graph.
+                display_: bool, whether to display the results.
+                allow_tree_: bool, whether to allow tree.
+                max_: int, the maximum number of ligands.
+                cutoff_: float, the cutoff value.
+                radial_: bool, whether to use radial.
+                hub_: str, the hub.
+                fast_: bool, whether to use fast.
+                links_file_: str, the links file.
+                known_actives_file_: str, the known actives file.
+                max_dist_from_actives_: int, the maximum distance
+
+            Returns
+                Instance of ClusterMaker object.
+        '''
+
         self.filePath = filePath
+        self.output_file = output_file
         self.db_mol = lomap.DBMolecules(directory = filePath, 
                                         parallel = parallel_,
                                         verbose = verbose_,
@@ -68,18 +111,81 @@ class ClusterMaker():
                                         max_dist_from_actives = max_dist_from_actives_,
                                         )
         
-        self.strict, self.loose = self.db_mol.build_matrices()
+        
         if loadMatrix:
             self.sim_data = np.load(loadFile)
         else:
-            self.sim_data = self.strict.to_numpy_2D_array()
-            
+            print(method)
+            if method == "MCMS":
+                    self.strict, self.loose = self.db_mol.build_matrices()
+                    self.sim_data = self.strict.to_numpy_2D_array()
+            elif method == "Shape":
+                    self.sim_data = self.calculateShapeMatrix(self.db_mol)
+            elif method == "MCES":
+                self.calculateMCES(self.db_mol)
+            elif method == "Pharmacore":
+                    pass
+            else:
+                raise ValueError("Invalid method. Please use 'MCMS', 'Shape', 'MCES'")
+                      
         self.n_arr = _clean_NaN(self.sim_data)
         self.ID_List = _clean_ID_list(_getID(self.db_mol, self.n_arr))
         self.plotter = Plotter(self.ID_List)
         self.sub_arrs = None
         self.sub_IDs = None
+    
 
+    def calculateShapeMatrix(self, db_mol):
+        '''
+        This function is used to calculate the shape matrix for the ligands.
+        The function uses the lomap package to calculate the shape matrix for the ligands.
+        The function returns the shape matrix for the ligands.
+
+            Parameters:
+                self: object, the ClusterMaker object.
+                db_mol: object, the lomap.DBMolecules object.
+
+            Returns:
+                shape matrix for the ligands.
+        '''
+        sim_data = lomap.SMatrix(shape=(len(db_mol._list), ))
+        for i, mol_a in enumerate(db_mol._list):
+            for j, mol_b in enumerate(db_mol._list):
+                if i == j:
+                    sim_data[i, j] = 1
+                else:
+                    mol_i = mol_a.getMolecule()
+                    mol_j = mol_b.getMolecule()
+
+                    Chem.SanitizeMol(mol_i)
+                    Chem.SanitizeMol(mol_j)
+
+                    pyO3A = rdMolAlign.GetO3A(prbMol = mol_i, refMol = mol_j)
+                    score = pyO3A.Align()
+                    
+                    sim_data[i, j] = score
+                    sim_data[j, i] = score
+                    print(score)
+        
+        
+        return sim_data
+
+    def calculateMCES(self, db_mol):
+        '''
+        This function is used to calculate the MCES score for the ligands.
+        The function uses the lomap package to calculate the MCES score for the ligands.
+        The function returns the MCES score for the ligands.
+
+            Parameters:
+                self: object, the ClusterMaker object.
+                db_mol: object, the lomap.DBMolecules object.
+
+            Returns:
+                MCES score for the ligands.
+        '''
+        print(db_mol._list)
+        
+    
     def saveDistanceMatrix(self, path : str):
         np.save(path, self.sim_data)
 
@@ -92,7 +198,28 @@ class ClusterMaker():
             raise ValueError("Invalid type. Please use 'strict' or 'loose'")
     
     def create_clusters(self):
+        '''
+        This function is used to create clusters of ligands based on their similarity scores.
+        The similarity scores are calculated using by default the lomap package. The function uses the
+        the similarity score to cluster the ligands based on their relative likeness.
+        The function uses the Plotter class to plot the distance matrix and the clusters.
+        The function saves the clusters to a text file.
+
+            Parameters:
+                self: object, the ClusterMaker object.
+
+            Returns:
+                sub_arrs: dict, n_arr subdivided into dict of cluster number keys
+                sub_IDs: dict, ID_list subdivided into dict of cluster number keys
+        '''
+
         self.sub_arrs, self.sub_IDs = self.cluster_interactive()
+        with open(self.output_file, 'w') as f:
+            f.write('Clustered Ligands\n')
+            for key in self.sub_IDs.keys():
+                f.write(f'Cluster {key}: {self.sub_IDs[key]}\n')
+
+            
         print(self.sub_arrs, self.sub_IDs)
         
     def getDBMolecules(self):
@@ -237,6 +364,14 @@ class ClusterMaker():
 
 
 class Plotter():
+    '''
+    This class is used to plot the distance matrix and the clusters.
+    The class has methods to plot the heatmap of the distance matrix, the clusters, and the cluster regions.
+    The class is used by the ClusterMaker class to plot the
+    distance matrix and the clusters.
+    '''
+    
+
     def __init__(self, id_list):
         self.ID_list = id_list
 
@@ -339,6 +474,7 @@ class Plotter():
                 markersize=6,
             )
         plt.title("Estimated number of clusters: %d" % n_clusters_)
+        plt.savefig("dbscan_plot.png", dpi=300)
         return fig
 
 
@@ -424,6 +560,7 @@ class Plotter():
         # Add figure labels and titles
         ax.set_ylabel('Ligand IDs')
         plt.title('Cluster Regions', pad=20)
+        plt.savefig("cluster_regions.png", dpi=300)
         return ax
     
     
@@ -450,6 +587,7 @@ class Plotter():
         self.plt_heatmap(data, axs[1], fig)
         axs[0].set_title('Cluster Regions', pad = 15)
         axs[1].set_title('Heatmap of chemical distance', pad = 15)
+        fig.savefig("cluster_regions_heatmap.png", dpi=300)
         return fig
 
 
@@ -457,8 +595,12 @@ class Plotter():
         
 
 if __name__ == "__main__":
-    cmaker = ClusterMaker('../input/FreeSolv')
-    cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
+    #cmaker = ClusterMaker('../input/FreeSolv')
+    #cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
+    #cmaker.create_clusters()
+
+    cmaker = ClusterMaker('../input/setCD', loadMatrix = False, method = "Shape", output_file = "clusters_setCD.txt")
     cmaker.create_clusters()
+    print()
 
     
