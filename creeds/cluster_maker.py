@@ -639,9 +639,11 @@ if __name__ == "__main__":
     #cmaker.create_clusters()
 
     matplotlib.use('TkAgg')
-    cmaker = ClusterMaker('../input/FreeSolv', loadMatrix = True, method = "MCMS", output_file = "clusters.json", 
-                          parallel_ = 6, loadFile="/localhome/lconconi/CREEDS/creeds/distance_matrix_FullFreeSolv.npy")
-    cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
+    #TODO: fix plots so that they are saved in the correct Folder
+    cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', loadMatrix = False, method = "MCMS", 
+                          output_file = "/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_cluster04_c_MCMS.json", 
+                          parallel_ = 6)
+    cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy")
     cmaker.create_clusters()
 
     
