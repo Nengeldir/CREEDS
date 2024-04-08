@@ -105,34 +105,30 @@ def _find_max_curvature(x, dists, **kwargs):
         # If starts flat, None may be detected. Fix.
         e = 0.0 if e is None else e
         epsilon = round(e, 3)
-        k.plot_knee_normalized()
+        k.plot_knee_normalized(figsize=(7,7))
+
         return epsilon
     
-
     dir, cv = _find_shape(x, dists)
     k_raw = KneeLocator(x, dists, S=1.0, curve=cv, direction=dir)
     k_fit = KneeLocator(x, dists, S=1.0, curve=cv, direction=dir,
                         interp_method="polynomial", online = True)
     
-        
-
     try:
         e_raw = detect_max(k_raw)
     except:
         # If curve is not found, set neighbor dist to 0.5, user can override
         e_raw = 0.5
+    
     plt.title("Raw Distance Data")
     plt.suptitle("Clustering cutoff at y-value of highest curvature",
                  size = 'medium', style = 'italic')
     plt.xlabel("Normalized ligands, sorted by distance")
     plt.ylabel("Normalized nearest neighbor distance")
+    plt.savefig('plots/cutoff_raw.pdf', pad_inches=0.3)
+    
     if kwargs.get('verbose') is True:
-   
-        plt.draw()
-        plt.pause(0.1)
-        input("<Hit Enter>")
-        plt.savefig('cutoff_raw.pdf')
-        plt.close()
+        plt.show()
     
     try:
         e_fit = detect_max(k_fit)
@@ -144,16 +140,16 @@ def _find_max_curvature(x, dists, **kwargs):
                  size = 'medium', style = 'italic')
     plt.xlabel("Normalized ligands, sorted by distance")
     plt.ylabel("Normalized nearest neighbor distance")
+    plt.savefig('plots/cutoff_fit.pdf', pad_inches=0.3)
+
     if kwargs.get('verbose') is True:
+        plt.show()
         
-        plt.draw()
-        plt.pause(0.1)
-        input("<Hit Enter>")
-        plt.savefig('cutoff_fit.pdf')
-        plt.close()
-        
-        print(f"A suggested range for neighbor distances is between {e_raw} and {e_fit}.")
-        print(f"The computed, default cutoff is {e_fit}.")
+    
+    
+    
+    print(f"A suggested range for neighbor distances is between {e_raw} and {e_fit}.")
+    print(f"The computed, default cutoff is {e_fit}.")
     
     
     # Testing block for analysis

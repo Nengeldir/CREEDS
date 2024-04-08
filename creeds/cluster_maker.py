@@ -114,19 +114,34 @@ class ClusterMaker():
         
         
         if loadMatrix:
+            print("Loading Similarity Matrix from file: ", loadFile)
             self.sim_data = np.load(loadFile)
         else:
-            print(method)
             if method == "MCMS":
-                    self.strict, self.loose = self.db_mol.build_matrices()
-                    self.sim_data = self.strict.to_numpy_2D_array()
-                    print("Finished building matrices.")
+
+                print("Calculating Similarity Matrix by using Maximum Common Substructure...\n")
+                
+                self.strict, self.loose = self.db_mol.build_matrices()
+                self.sim_data = self.strict.to_numpy_2D_array()
+                
+                print("Finished calculation of Similarity Matrix.")
+
             elif method == "Shape":
-                    self.sim_data = self.calculateShapeMatrix(self.db_mol)
+
+                print("Calculating Similarity Matrix by using the shape method... \n")
+
+                self.sim_data = self.calculateShapeMatrix(self.db_mol)
+
+                print("Finished calculation of Similarity Matrix.")
+
             elif method == "MCES":
+
+                print("Cacluating Similarity Matrix by using MCES... \n")
+                
                 self.calculateMCES(self.db_mol)
-            elif method == "Pharmacore":
-                    pass
+
+                print("Finished calculation of Similarity Matrix.")
+
             else:
                 raise ValueError("Invalid method. Please use 'MCMS', 'Shape', 'MCES'")
                       
@@ -150,6 +165,7 @@ class ClusterMaker():
             Returns:
                 shape matrix for the ligands.
         '''
+        #TODO: test
         sim_data = lomap.SMatrix(shape=(len(db_mol._list), ))
         for i, mol_a in enumerate(db_mol._list):
             for j, mol_b in enumerate(db_mol._list):
@@ -169,7 +185,7 @@ class ClusterMaker():
                     sim_data[j, i] = score
                     print(score)
         
-        #TODO_: test
+        
 
         return sim_data
 
@@ -190,6 +206,15 @@ class ClusterMaker():
         pass
     
     def saveDistanceMatrix(self, path : str):
+        '''
+        Save the Similartiy/Distance matrix to a file.
+
+        Parameters:
+        path (str): The path to the file where the distance matrix will be saved.
+
+        Returns:
+        None
+        '''
         np.save(path, self.sim_data)
 
     def get_similarity_matrix(self, type : str):
@@ -234,12 +259,10 @@ class ClusterMaker():
 
         clustering += "}"
 
-        print(clustering)
-
         with open(self.output_file, 'w') as f:
             f.write(clustering)
 
-        print(self.sub_arrs, self.sub_IDs)
+        print("Wrote Clustering to ", self.output_file, " as json.")
         
     def getDBMolecules(self):
         '''
@@ -253,7 +276,7 @@ class ClusterMaker():
         '''
         return self.db_mol
     
-    def cluster_interactive(self, skip: bool = True):
+    def cluster_interactive(self, verbose: bool = True):
         '''
         Function for if user wants to inspect distance data first and
         self assign the clustering neighbour distance cutoff. Also useful if
@@ -280,14 +303,12 @@ class ClusterMaker():
 
         # Generate distance data
         self.data = 1 - self.sim_data
-
-        print("Hello 4")
         # Output distance info to user.
         x, dists = _k_dist(self.data)
-        auto_cutoff = _find_max_curvature(x, dists, savefigs=True, verbose=True)
+        auto_cutoff = _find_max_curvature(x, dists, savefigs=True, verbose=verbose)
 
-        print("Hello 5")
-        
+        print("auto_cutoff was determined to be ", auto_cutoff)
+
         # Get user input on distance cutoff, epsilon in dbscan, typed
         input_cutoff = input("Enter a neighbor distance cutoff for clustering:")
         if input_cutoff == "":
@@ -303,15 +324,10 @@ class ClusterMaker():
         
         # Output table for user cluster selection
         # Modify to just print clusters and create a sdf file useful for pyeds
-
-        plt.tight_layout()
-        plt.draw()
-        plt.pause(2)
-        print("Hello")
-        if not skip:
-            input("<Hit Enter>")
-        plt.close()
-        print("Hello 3")
+        
+        if verbose:
+            plt.show()
+    
 
         # Figure saving
         pdf = matplotlib.backends.backend_pdf.PdfPages("output.pdf")
@@ -321,7 +337,6 @@ class ClusterMaker():
         pdf.savefig(fig2)
         pdf.close()
 
-        print("Hello 2")
         # Generate sub-arrays of clusters. Stored in dictionaries.
         sub_arr, sub_ID = _sub_arrays(labels, self.sim_data, self.ID_List)
 
@@ -499,7 +514,7 @@ class Plotter():
                 markersize=6,
             )
         plt.title("Estimated number of clusters: %d" % n_clusters_)
-        plt.savefig("plot/dbscan_plot.png", dpi=300)
+        plt.savefig("plots/dbscan_plot.png", dpi=300)
         return fig
 
 
@@ -552,7 +567,7 @@ class Plotter():
         # Make the labels a 2D array that can be plotted
         labels_arr = labels.reshape(N, 1)
         # Define discrete colors for N clusters.
-        cmap = cm.get_cmap('inferno', len(unique_labels))
+        cmap = plt.get_cmap('inferno')
         # Plot. Had 0.04 for the aspect before
         psm = ax.imshow(labels_arr, cmap=cmap, rasterized=True, aspect= 'auto')
         
@@ -585,9 +600,8 @@ class Plotter():
         # Add figure labels and titles
         ax.set_ylabel('Ligand IDs')
         plt.title('Cluster Regions', pad=20)
-        plt.savefig("plot/cluster_regions.png", dpi=300)
+        plt.savefig("plots/cluster_regions.png", dpi=300, bbox_inches='tight')
         return ax
-    
     
     # This need the kwargs options put in
     def plt_cluster(self, data, labels):
@@ -606,12 +620,12 @@ class Plotter():
         _clean_ID_list(self.ID_list)
         # This was 4.5 not 5.5
         fig, axs = plt.subplots(1, 2, figsize=(9.5, 4.5), gridspec_kw={'width_ratios': [1, 4], 'height_ratios': [1]})
-        fig.tight_layout()
         plt.subplots_adjust(top=0.86, bottom=0.22)
         self.plt_cluster_regions(labels, ax=axs[0], fig=fig)
         self.plt_heatmap(data, axs[1], fig)
         axs[0].set_title('Cluster Regions', pad = 15)
         axs[1].set_title('Heatmap of chemical distance', pad = 15)
+        fig.tight_layout()
         fig.savefig("plots/cluster_regions_heatmap.png", dpi=300)
         return fig
 
@@ -624,11 +638,10 @@ if __name__ == "__main__":
     #cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
     #cmaker.create_clusters()
 
-    cmaker = ClusterMaker('../input/FreeSolv', loadMatrix = False, method = "MCMS", output_file = "clusters.json", parallel_ = 6)
-    print("finished initializiation of cmaker")
+    matplotlib.use('TkAgg')
+    cmaker = ClusterMaker('../input/FreeSolv', loadMatrix = True, method = "MCMS", output_file = "clusters.json", 
+                          parallel_ = 6, loadFile="/localhome/lconconi/CREEDS/creeds/distance_matrix_FullFreeSolv.npy")
     cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
-    print("saved distance matrix")
     cmaker.create_clusters()
-    print("created clusters")
 
     
