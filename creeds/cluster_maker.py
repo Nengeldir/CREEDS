@@ -337,6 +337,7 @@ class ClusterMaker():
         pdf.savefig(fig2)
         pdf.close()
 
+        print(labels)
         # Generate sub-arrays of clusters. Stored in dictionaries.
         sub_arr, sub_ID = _sub_arrays(labels, self.sim_data, self.ID_List)
 

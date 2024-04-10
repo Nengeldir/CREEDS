@@ -24,5 +24,5 @@ def extract(json_cluster : str, input_sdf_dir : str, output_sdf_dir : str, clust
 
 if __name__ == '__main__':
     extract('/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json', '/localhome/lconconi/CREEDS/input/FreeSolv', 
-            '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', 'Cluster_4')
+            '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/sdf_files', 'Cluster_4')
     

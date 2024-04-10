@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 from kneed import KneeLocator, DataGenerator
-
+import sys
 def _clean_NaN(sim_np):
     '''
     If there are NaN values in the similarity matrix, replace them with 0
@@ -171,7 +171,7 @@ def _find_max_curvature(x, dists, **kwargs):
     
     return e_fit
 
-def _dbscan(X, **kwargs):
+def _dbscan(X, fit_noise = True, max_searches = 10, **kwargs):
     '''
     Peforms clustering using DBSCAN.
     
@@ -182,6 +182,10 @@ def _dbscan(X, **kwargs):
                          default = None, will calculate
             min_s: minimum sample in cluster
                    default = 1
+            fit_noise: try to fit the noise/outliers to the best possible cluster
+                    default = True
+            max_searches: number of maximal searches to perform to find a good fit
+                    default = 10
         Returns:
             labels: array of cluster numbers by ligand
             core_samples_mask: filters clusters
@@ -202,18 +206,50 @@ def _dbscan(X, **kwargs):
         dist_cutoff = _find_max_curvature(x, dists)
     else:
         dist_cutoff = dist_cutoff
-        
+    
+
     # Find clusters.
     db = DBSCAN(eps=dist_cutoff, min_samples=min_s, metric = 'precomputed').fit(X)
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
     core_samples_mask[db.core_sample_indices_] = True
     labels = db.labels_
+
     # Find number of clusters, ignoring noise if present.
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
     n_noise_ = list(labels).count(-1)
     # Print cluster information for user.
     print("Estimated number of clusters: %d" % n_clusters_)
     print("Estimated number of noise points: %d" % n_noise_)
+
+    if fit_noise:
+        print("Adding the noise ligands to the cluster with the closest ligand")
+        for i, label in enumerate(labels):
+            if label == -1:
+                distances = X[i]
+                sorted_distances = np.sort(distances)
+
+                # maximum number of times one can search for a possible fit for the outlier
+                # that is again not an outlier
+                for j in range(max_searches): 
+    
+                    # get the index of the ligand that is most similar
+                    # as the matrix is symmetric we can skip the same value 
+                    loc_min_dist = sorted_distances[2 * j] 
+                    loc_min_index = np.where(distances == loc_min_dist)[0][0]
+
+                    #the closest match is also an outlier
+                    if labels[loc_min_index] != -1:
+                        label_closest_match = labels[loc_min_index]
+                        labels[i] = label_closest_match        
+                        break
+                    
+                    # we have not found a good match for the ligand: Throw an exception
+                    if j == max_searches - 1:
+                        raise ValueError("For ligand " +  str(i) + " no good fit was found after " + str(max_searches) + " searches")
+                    
+        n_noise_ = list(labels).count(-1)
+        print("New Number of noise points ", n_noise_)
+
     return labels, core_samples_mask, n_clusters_
 
 def _find_shape(x, y):
