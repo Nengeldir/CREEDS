@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 
 def extract(json_cluster : str, input_sdf_dir : str, output_sdf_dir : str, cluster_name:str):
@@ -20,7 +21,9 @@ def extract(json_cluster : str, input_sdf_dir : str, output_sdf_dir : str, clust
     clusters = json.load(json_file)
 
     for ligand in clusters[cluster_name]:
-        shutil.copyfile(input_sdf_dir + "/" + ligand + ".sdf", output_sdf_dir + "/" + ligand + ".sdf")
+        file_path_input = os.path.join(input_sdf_dir, ligand + ".sdf")
+        file_path_output = os.path.join(output_sdf_dir, ligand + ".sdf")
+        shutil.copyfile(file_path_input, file_path_output)
 
 if __name__ == '__main__':
     extract('/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json', '/localhome/lconconi/CREEDS/input/FreeSolv', 

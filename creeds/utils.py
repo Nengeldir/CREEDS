@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 from kneed import KneeLocator, DataGenerator
 import sys
+import os
+
 def _clean_NaN(sim_np):
     '''
     If there are NaN values in the similarity matrix, replace them with 0
@@ -83,7 +85,7 @@ def _k_dist(data):
 
     return x, distances
 
-def _find_max_curvature(x, dists, **kwargs):
+def _find_max_curvature(x, dists, plot_path='plots/', **kwargs):
     '''
     Outputs the point of maximum curvature, known as the elbow
     or knee of a curve.
@@ -125,7 +127,8 @@ def _find_max_curvature(x, dists, **kwargs):
                  size = 'medium', style = 'italic')
     plt.xlabel("Normalized ligands, sorted by distance")
     plt.ylabel("Normalized nearest neighbor distance")
-    plt.savefig('plots/cutoff_raw.pdf', pad_inches=0.3)
+    cutoff_raw_path = os.path.join(plot_path, 'cutoff_raw.pdf')
+    plt.savefig(cutoff_raw_path, pad_inches=0.3)
     
     if kwargs.get('verbose') is True:
         plt.show()
@@ -140,7 +143,8 @@ def _find_max_curvature(x, dists, **kwargs):
                  size = 'medium', style = 'italic')
     plt.xlabel("Normalized ligands, sorted by distance")
     plt.ylabel("Normalized nearest neighbor distance")
-    plt.savefig('plots/cutoff_fit.pdf', pad_inches=0.3)
+    cutoff_fit_path = os.path.join(plot_path, 'cutoff_fit.pdf')
+    plt.savefig(cutoff_fit_path, pad_inches=0.3)
 
     if kwargs.get('verbose') is True:
         plt.show()
@@ -171,7 +175,7 @@ def _find_max_curvature(x, dists, **kwargs):
     
     return e_fit
 
-def _dbscan(X, fit_noise = True, max_searches = 10, **kwargs):
+def _dbscan(X, max_searches = 10, plot_path = 'plots/', **kwargs):
     '''
     Peforms clustering using DBSCAN.
     
@@ -182,8 +186,6 @@ def _dbscan(X, fit_noise = True, max_searches = 10, **kwargs):
                          default = None, will calculate
             min_s: minimum sample in cluster
                    default = 1
-            fit_noise: try to fit the noise/outliers to the best possible cluster
-                    default = True
             max_searches: number of maximal searches to perform to find a good fit
                     default = 10
         Returns:
@@ -203,7 +205,7 @@ def _dbscan(X, fit_noise = True, max_searches = 10, **kwargs):
     if dist_cutoff is None:
         # If not given, calculate it. Default.
         x, dists = _k_dist(X)
-        dist_cutoff = _find_max_curvature(x, dists)
+        dist_cutoff = _find_max_curvature(x, dists, plot_path)
     else:
         dist_cutoff = dist_cutoff
     
@@ -221,6 +223,9 @@ def _dbscan(X, fit_noise = True, max_searches = 10, **kwargs):
     print("Estimated number of clusters: %d" % n_clusters_)
     print("Estimated number of noise points: %d" % n_noise_)
 
+    # Ask user if they want to fit the noise. and write down ligands 
+    # that are noise and to which cluster they are mapped
+    fit_noise = input("Do you want to try to fit the noise?")
     if fit_noise:
         print("Adding the noise ligands to the cluster with the closest ligand")
         for i, label in enumerate(labels):

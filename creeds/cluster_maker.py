@@ -1,5 +1,6 @@
 import lomap
 import json
+import os
 
 import numpy as np
 from typing import List, Optional
@@ -49,7 +50,8 @@ class ClusterMaker():
                  loadMatrix: Optional[str] = False,
                  loadFile: Optional[str] = "distance_matrix.npy",
                  output_file: Optional[str] = "clusters.txt",
-                 method: str = "MCMS"
+                 method: str = "MCMS",
+                 plot_folder_: str = "plots"
                  ):
         '''
         This class is used to create clusters of ligands based on their similarity scores.
@@ -147,7 +149,8 @@ class ClusterMaker():
                       
         self.n_arr = _clean_NaN(self.sim_data)
         self.ID_List = _clean_ID_list(_getID(self.db_mol, self.n_arr))
-        self.plotter = Plotter(self.ID_List)
+        self.plot_folder = plot_folder_
+        self.plotter = Plotter(self.ID_List, self.plot_folder)
         self.sub_arrs = None
         self.sub_IDs = None
     
@@ -305,7 +308,7 @@ class ClusterMaker():
         self.data = 1 - self.sim_data
         # Output distance info to user.
         x, dists = _k_dist(self.data)
-        auto_cutoff = _find_max_curvature(x, dists, savefigs=True, verbose=verbose)
+        auto_cutoff = _find_max_curvature(x, dists, plot_path=self.plot_folder, savefigs=True, verbose=verbose)
 
         print("auto_cutoff was determined to be ", auto_cutoff)
 
@@ -317,7 +320,6 @@ class ClusterMaker():
         else:
             user_cutoff = float(input_cutoff)
         # Do Clustering.
-        # I changed the min_s from 4 to 2
         labels, mask, n_clusters_ = _dbscan(self.data, dist_cutoff=user_cutoff, min_s = 2)
         
         ax = self.plotter.plt_cluster(self.data, labels)
@@ -330,14 +332,14 @@ class ClusterMaker():
     
 
         # Figure saving
-        pdf = matplotlib.backends.backend_pdf.PdfPages("output.pdf")
+        output_path = os.path.join(self.plot_folder, "output.pdf")
+        pdf = matplotlib.backends.backend_pdf.PdfPages(output_path)
         fig1 = self.plotter.plt_cluster(self.data, labels)
         fig2 = self.plotter.plt_dbscan(self.data, labels, mask, n_clusters_)
         pdf.savefig(fig1, bbox_inches= "tight", pad_inches=0.5)
         pdf.savefig(fig2)
         pdf.close()
 
-        print(labels)
         # Generate sub-arrays of clusters. Stored in dictionaries.
         sub_arr, sub_ID = _sub_arrays(labels, self.sim_data, self.ID_List)
 
@@ -391,7 +393,7 @@ class ClusterMaker():
         pdf = matplotlib.backends.backend_pdf.PdfPages("output.pdf")
         x, dists = _k_dist(data)
         epsilon_fit = _find_max_curvature(x, dists, savefigs=True)
-        labels, mask, n_clusters_ = _dbscan(data)
+        labels, mask, n_clusters_ = _dbscan(data, self.plot_folder)
         fig1 = self.plotter.plt_cluster(data, labels, ID_list)
         fig2 = self.plotter.plt_dbscan(data, labels, mask, n_clusters_)
         pdf.savefig(fig1)
@@ -413,9 +415,9 @@ class Plotter():
     '''
     
 
-    def __init__(self, id_list):
+    def __init__(self, id_list, plot_folder = "plots"):
         self.ID_list = id_list
-
+        self.plot_folder = plot_folder
     def plt_heatmap(self, data, ax, fig, **kwargs):
             '''
             Plots a heatmap of the chemical distances that will be clustered.
@@ -515,7 +517,8 @@ class Plotter():
                 markersize=6,
             )
         plt.title("Estimated number of clusters: %d" % n_clusters_)
-        plt.savefig("plots/dbscan_plot.png", dpi=300)
+        dbscan_path = os.path.join(self.plot_folder, "dbscan_plot.png")
+        plt.savefig(dbscan_path, dpi=300)
         return fig
 
 
@@ -601,7 +604,8 @@ class Plotter():
         # Add figure labels and titles
         ax.set_ylabel('Ligand IDs')
         plt.title('Cluster Regions', pad=20)
-        plt.savefig("plots/cluster_regions.png", dpi=300, bbox_inches='tight')
+        cluster_regions_path = os.path.join(self.plot_folder, "cluster_regions.png")
+        plt.savefig(cluster_regions_path, dpi=300, bbox_inches='tight')
         return ax
     
     # This need the kwargs options put in
@@ -627,7 +631,8 @@ class Plotter():
         axs[0].set_title('Cluster Regions', pad = 15)
         axs[1].set_title('Heatmap of chemical distance', pad = 15)
         fig.tight_layout()
-        fig.savefig("plots/cluster_regions_heatmap.png", dpi=300)
+        cluster_regions_heatmap_path = os.path.join(self.plot_folder, "cluster_regions_heatmap.png")
+        fig.savefig(cluster_regions_heatmap_path, dpi=300)
         return fig
 
 
@@ -639,11 +644,14 @@ if __name__ == "__main__":
     #cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
     #cmaker.create_clusters()
 
-    matplotlib.use('TkAgg')
+    #matplotlib.use('TkAgg')
     #TODO: fix plots so that they are saved in the correct Folder
-    cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', loadMatrix = False, method = "MCMS", 
+    cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', 
+                          loadMatrix = False, 
+                          method = "MCMS", 
                           output_file = "/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_cluster04_c_MCMS.json", 
-                          parallel_ = 6)
+                          parallel_ = 6,
+                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/plots/')
     cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy")
     cmaker.create_clusters()
 
