@@ -230,7 +230,7 @@ def randomize(output_dir : str,
         ligand_list = [x for x in ligand_list if x not in sim_files[sim]]
         
     
-    # Now append the first ligand to the previous subset
+    # Now append the best ligand to the previous subset
     sim_keys = list(sim_files.keys())
     for i, sim in enumerate(sim_keys):
         next_key = sim_keys[(i + 1) % len(sim_keys)]

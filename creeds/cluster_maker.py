@@ -25,14 +25,20 @@ import argparse
 
 class ClusterMaker():
 
-    def __init__(self, 
-                 filePath: str, 
+    def __init__(self,
+                 filePath_: str,
+                 loadMatrix_: bool = False,
+                 loadFile_: str = "distance_matrix.npy",
+                 output_file_: str = "clusters.json",
+                 method_: str = "MCS",
+                 plot_folder_: str = "plots/",
                  parallel_: int = 4,
                  verbose_: str = 'off',
                  time_ : int = 20,
                  ecrscore_: float = 0.0,
                  threed_: bool = False,
                  max3d_: float = 1000.0,
+                 element_change_ : bool = True,
                  output_: bool = False,
                  name_: str = "CREEDS_out",
                  output_no_images_: bool = False,
@@ -47,57 +53,132 @@ class ClusterMaker():
                  links_file_: Optional[str] = None,
                  known_actives_file_: Optional[str] = None,
                  max_dist_from_actives_: int = 2,
-                 loadMatrix: Optional[str] = False,
-                 loadFile: Optional[str] = "distance_matrix.npy",
-                 output_file: Optional[str] = "clusters.txt",
-                 method: str = "MCMS",
-                 plot_folder_: str = "plots"
+                 use_common_core_: bool = True,
+                 shift_: bool = True
                  ):
         '''
         This class is used to create clusters of ligands based on their similarity scores.
-        The similarity scores are calculated using by default the lomap package. The class uses the
-        the similarity score to cluster the ligands based on their relative likeness. 
-        The class has methods to calculate, save and load the distance matrix, create clusters, get the DBMolecules object, and
-        get the clusters. The class uses the Plotter class to plot the distance matrix and
+        The similarity scores are calculated using the Maximum Common Substructure (MCMS) and the Shape score (shape).
+        By default it uses the MCMS score calculated in the lomap package.
+
+        The class uses an instance of lomap.DBMolecules to either handle the molecules and/or calculate the Maximum Common Substructure.
+        
+        The initialization takes in a vast variety of parameters. The user can easily adapt the input to cater to their needs. A detailed description of each
+        parameter can be found in the bottom portion of this docstring.
+
+        The only necessary parameter is the filePath: where the sdf files are located (Note: they should be separate for each molecule)
+
+        The ClusterMaker class has a variety of methods. It can calculate, save and load the distance matrix, create clusters, get the DBMolecules object, and
+        calculate the clusters. The class uses a helper class called Plotter to plot the distance matrix and
         the clusters.
 
             Parameters
-                filePath: str, the path to the directory containing the ligand files. 
-                    It should contain sdf files.
-                parallel_: int, the number of parallel processes to use.
-                verbose_: str, the verbosity level.
-                time_: int, the time limit for the calculation.
-                ecrscore_: float, the ECR score.
-                threed_: bool, whether to use 3D coordinates.
-                max3d_: float, the maximum 3D distance.
-                output_: bool, whether to output the results.
-                name_: str, the name of the output file.
-                output_no_images_: bool, whether to output images.
-                output_no_graph_: bool, whether to output the graph.
-                display_: bool, whether to display the results.
-                allow_tree_: bool, whether to allow tree.
-                max_: int, the maximum number of ligands.
-                cutoff_: float, the cutoff value.
-                radial_: bool, whether to use radial.
-                hub_: str, the hub.
-                fast_: bool, whether to use fast.
-                links_file_: str, the links file.
-                known_actives_file_: str, the known actives file.
-                max_dist_from_actives_: int, the maximum distance
+                filePath: str, 
+                    Description: The path to the directory containing the ligand files. It should contain single sdf/md2 files.
+                    Default: no-default
+                parallel_: int
+                    Description: The number of parallel processes to use. It generally speeds up the calculation.
+                    Default = 4
+                verbose_: str, 
+                    Description: The verbosity level. Modes one of: 'off', 'info', 'pedantic'
+                    Default = 'off'
+                time_: int, 
+                    Description: The time limit for the calculation.
+                    Default: 20
+                ecrscore_: float
+                    Description: The electrostatic score when two molecules have different charges (it is used if ecrscore_ != 0)
+                    Default: 0.0
+                threed_: bool
+                    Description: If true, symmetry-equivalent MCSes are filtered to prefer the one with the best real-space alignment
+                    Default: False
+                max3d_: float
+                    Description: The MCS is filtered to remove atoms which are further apart than this threshold.
+                    Default: 1000.0
+                element_change_: bool
+                    Description: Whether to allow changes in elements between two mapping.
+                    Default: True
+                output_: bool
+                    Description: whether to output the results.
+                    Default: False
+                name_: str
+                    Description: the prefix name of the output file
+                    Default: CREEDS_out
+                loadMatrix_: bool
+                    Description: Flag to determine if the distance matrix should be loaded instead of calculating it by scratch
+                    Default: False
+                loadFile_: str
+                    Description: Path to a npy (numpy binary file), that contains the distance matrix. Loading a precalculated distance matrix
+                        prevents recalculating it again and therefore saves time.
+                    Default: distance_matrix.npy
+                output_file_: str
+                    Description: The filename and path where the clusters should be saved, by default it generates a json file where each key is the cluster name
+                        Followed by a list of ligands. 
+                    Default: clusters.json
+                method_: str
+                    Description: Which method should be used to calculate the distance matrix. Choose one of MCSS (Maximum Common Substructure Score) / Shape (RDKit
+                    Alignment Score)
+                    Default: MCSS
+                plot_folder_: str
+                    Description: Path to the folder where all plots are saved.
+                    Default: plots/
+
+                LoMap Specific Options and Variables
+                    output_no_images_: bool
+                        Description: A flag to disable generation of output images.
+                        Default: False
+                    output_no_graph_: bool
+                        Description: A flag to disable generation of output graph (.dot file).
+                        Default: False
+                    display_: bool
+                        Description: A flag to determine wheter to display or not a network made by matplotlib.
+                        Default: False
+                    allow_tree_: bool
+                        Description: if set, then the final graph does not need a cycle covering and therefore will be a tree.
+                        Default: False
+                    max_: int
+                        Description: The maximum diameter of the resulting graph
+                        Default: 6
+                    cutoff_: float
+                        Description: The Minimum Similarity Score(MSS) used to build the graph.
+                        Default: 0.4
+                    radial_: bool
+                        Description: Option to use the radial graph approach in LoMap
+                        Default: False
+                    hub_: str
+                        Description: Manual selected compound that is the center of the graph
+                        Default: None
+                    fast_: bool
+                        Description: Using the fast graphing option
+                        Default: False
+                    links_file_: str
+                        Description: the name of a file containing links to seed the graph with.
+                        Default: None
+                    known_actives_file_: str
+                        Description: the name of a file containing mols whose actviity is known.
+                        Default: None
+                    max_dist_from_actives_: int
+                        Description: The maximum number of links from any molecule to an active
+                        Default: 2
+                    use_common_core_: bool
+                        Description: Wheter to search among all input molecules for a common core to speed up pairwise MCS calculations.
+                        Default: True
 
             Returns
                 Instance of ClusterMaker object.
         '''
 
-        self.filePath = filePath
-        self.output_file = output_file
-        self.db_mol = lomap.DBMolecules(directory = filePath, 
+        self.filePath_ = filePath_
+        self.output_file_ = output_file_
+        self.loadFile_ = loadFile_
+
+        self.db_mol = lomap.DBMolecules(directory = filePath_, 
                                         parallel = parallel_,
                                         verbose = verbose_,
                                         time = time_,
                                         ecrscore = ecrscore_,
                                         threed = threed_,
                                         max3d = max3d_,
+                                        element_change = element_change_,
                                         output = output_,
                                         name = name_,
                                         output_no_images = output_no_images_,
@@ -112,14 +193,16 @@ class ClusterMaker():
                                         links_file = links_file_,
                                         known_actives_file = known_actives_file_,
                                         max_dist_from_actives = max_dist_from_actives_,
+                                        use_common_core = use_common_core_,
+                                        shift = shift_
                                         )
         
         
-        if loadMatrix:
-            print("Loading Similarity Matrix from file: ", loadFile)
-            self.sim_data = np.load(loadFile)
+        if loadMatrix_:
+            print("Loading Similarity Matrix from file: ", self.loadFile_)
+            self.sim_data = np.load(self.loadFile_)
         else:
-            if method == "MCMS":
+            if method_ == "MCSS":
 
                 print("Calculating Similarity Matrix by using Maximum Common Substructure...\n")
                 
@@ -128,7 +211,7 @@ class ClusterMaker():
                 
                 print("Finished calculation of Similarity Matrix.")
 
-            elif method == "Shape":
+            elif method_ == "Shape":
 
                 print("Calculating Similarity Matrix by using the shape method... \n")
 
@@ -136,7 +219,7 @@ class ClusterMaker():
 
                 print("Finished calculation of Similarity Matrix.")
 
-            elif method == "MCES":
+            elif method_ == "MCES":
 
                 print("Cacluating Similarity Matrix by using MCES... \n")
                 
@@ -145,7 +228,7 @@ class ClusterMaker():
                 print("Finished calculation of Similarity Matrix.")
 
             else:
-                raise ValueError("Invalid method. Please use 'MCMS', 'Shape', 'MCES'")
+                raise ValueError("Invalid method. Please use 'MCSS', 'Shape', 'MCES'")
                       
         self.n_arr = _clean_NaN(self.sim_data)
         self.ID_List = _clean_ID_list(_getID(self.db_mol, self.n_arr))
