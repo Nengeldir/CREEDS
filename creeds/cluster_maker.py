@@ -167,9 +167,7 @@ class ClusterMaker():
                 Instance of ClusterMaker object.
         '''
 
-        self.filePath_ = filePath_
-        self.output_file_ = output_file_
-        self.loadFile_ = loadFile_
+        
 
         self.db_mol = lomap.DBMolecules(directory = filePath_, 
                                         parallel = parallel_,
@@ -199,15 +197,18 @@ class ClusterMaker():
         
         
         if loadMatrix_:
-            print("Loading Similarity Matrix from file: ", self.loadFile_)
-            self.sim_data = np.load(self.loadFile_)
+            if os.path.exists(self.loadFile_):
+                print("Loading Similarity Matrix from file: ", self.loadFile_)
+                self.sim_data_ = np.load(self.loadFile_)
+            else:
+                raise ValueError("Similarity File does not exist at given location ", self.loadFile_)
         else:
             if method_ == "MCSS":
 
                 print("Calculating Similarity Matrix by using Maximum Common Substructure...\n")
                 
-                self.strict, self.loose = self.db_mol.build_matrices()
-                self.sim_data = self.strict.to_numpy_2D_array()
+                self.strict_, _ = self.db_mol.build_matrices()
+                self.sim_data_ = self.strict_.to_numpy_2D_array()
                 
                 print("Finished calculation of Similarity Matrix.")
 
@@ -215,7 +216,7 @@ class ClusterMaker():
 
                 print("Calculating Similarity Matrix by using the shape method... \n")
 
-                self.sim_data = self.calculateShapeMatrix(self.db_mol)
+                self.sim_data_ = self.calculateShapeMatrix(self.db_mol)
 
                 print("Finished calculation of Similarity Matrix.")
 
@@ -229,19 +230,23 @@ class ClusterMaker():
 
             else:
                 raise ValueError("Invalid method. Please use 'MCSS', 'Shape', 'MCES'")
-                      
-        self.n_arr = _clean_NaN(self.sim_data)
+        
+        self.filePath_ = filePath_
+        self.output_file_ = output_file_
+        self.loadFile_ = loadFile_
+        self.n_arr = _clean_NaN(self.sim_data_)
         self.ID_List = _clean_ID_list(_getID(self.db_mol, self.n_arr))
-        self.plot_folder = plot_folder_
-        self.plotter = Plotter(self.ID_List, self.plot_folder)
-        self.sub_arrs = None
-        self.sub_IDs = None
+        self.plot_folder_ = plot_folder_
+        self.plotter_ = Plotter(self.ID_List, self.plot_folder_)
+        self.sub_arrs_ = None
+        self.sub_IDs_ = None
+        self.clustering_ = None
     
 
     def calculateShapeMatrix(self, db_mol):
         '''
         This function is used to calculate the shape matrix for the ligands.
-        The function uses the lomap package to calculate the shape matrix for the ligands.
+        The function uses RDKit to calculate the shape matrix for the ligands.
         The function returns the shape matrix for the ligands.
 
             Parameters:
@@ -252,11 +257,11 @@ class ClusterMaker():
                 shape matrix for the ligands.
         '''
         #TODO: test
-        sim_data = lomap.SMatrix(shape=(len(db_mol._list), ))
+        self.sim_data_ = lomap.SMatrix(shape=(len(db_mol._list), ))
         for i, mol_a in enumerate(db_mol._list):
             for j, mol_b in enumerate(db_mol._list):
                 if i == j:
-                    sim_data[i, j] = 1
+                    self.sim_data_[i, j] = 1
                 else:
                     mol_i = mol_a.getMolecule()
                     mol_j = mol_b.getMolecule()
@@ -267,13 +272,12 @@ class ClusterMaker():
                     pyO3A = rdMolAlign.GetO3A(prbMol = mol_i, refMol = mol_j)
                     score = pyO3A.Align()
                     
-                    sim_data[i, j] = score
-                    sim_data[j, i] = score
+                    self.sim_data_[i, j] = score
+                    self.sim_data_[j, i] = score
                     print(score)
         
-        
 
-        return sim_data
+        return self.sim_data_
 
     def calculateMCES(self, db_mol):
         '''
@@ -288,6 +292,7 @@ class ClusterMaker():
             Returns:
                 MCES score for the ligands.
         '''
+        # TODO:
         print(db_mol._list)
         pass
     
@@ -296,54 +301,57 @@ class ClusterMaker():
         Save the Similartiy/Distance matrix to a file.
 
         Parameters:
-        path (str): The path to the file where the distance matrix will be saved.
+            path (str): The path to the file where the distance matrix will be saved.
 
         Returns:
-        None
+            None
         '''
-        np.save(path, self.sim_data)
+        np.save(path, self.sim_data_)
 
-    def get_similarity_matrix(self, type : str):
-        if type == "strict":
-            return self.strict
-        elif type == "loose":
-            return self.loose
-        else:
-            raise ValueError("Invalid type. Please use 'strict' or 'loose'")
+    def get_similarity_matrix(self):
+        '''
+        Returns the Similarity/Distance Matrix. 
+        '''
+        return self.sim_data_
+        
     
     def create_clusters(self):
         '''
-        This function is used to create clusters of ligands based on their similarity scores.
-        The similarity scores are calculated using by default the lomap package. The function uses the
-        the similarity score to cluster the ligands based on their relative likeness.
-        The function uses the Plotter class to plot the distance matrix and the clusters.
-        The function saves the clusters to a text file.
+        This function is used to create clusters of ligands based on their similarity scores. There needs to be a sensible distancematrix saved in self.simdata_
+        It uses the Plotter class to plot the distance matrix and the clusters.
+        The function saves the clusters to a json file. After the function call following variables are now populated
+            self.sub_arrs_: dict, n_arr subdivided into dict of cluster number keys
+            self.sub_IDs_: dict, ID_list subdivided into dict of cluster number key
+            self.clustering_: json, parsed json object that contains the clustering information 
 
-            Parameters:
-                self: object, the ClusterMaker object.
+        Parameters:
+            self: object, the ClusterMaker object.
 
-            Returns:
-                sub_arrs: dict, n_arr subdivided into dict of cluster number keys
-                sub_IDs: dict, ID_list subdivided into dict of cluster number keys
+        Returns:
+            None
         '''
 
-        self.sub_arrs, self.sub_IDs = self.cluster_interactive()
+        # Start interactive sequence to determine clusters, clusters are saved in sub_IDs, where sub_arrs gets the distance matrix of the cluster
+         
+        self.sub_arrs_, self.sub_IDs_ = self.cluster_interactive()
 
         clustering = "{"
 
-        for key in self.sub_IDs.keys():
+        for key in self.sub_IDs_.keys():
             clustering += "\"Cluster_" + str(key) + "\"" + " : [" 
 
-            for cluster in self.sub_IDs[key]:
+            for cluster in self.sub_IDs_[key]:
                 clustering += "\"" + str(cluster) + "\""
-                if cluster != list(self.sub_IDs[key])[-1]:
+                if cluster != list(self.sub_IDs_[key])[-1]:
                     clustering += ", "
             clustering += "]"
-            if key != len(self.sub_IDs.keys()) - 1:
+            if key != len(self.sub_IDs_.keys()) - 1:
                 clustering += ",\n"
 
 
         clustering += "}"
+
+        self.clustering = json.parse(clustering)
 
         with open(self.output_file, 'w') as f:
             f.write(clustering)
@@ -364,12 +372,12 @@ class ClusterMaker():
     
     def cluster_interactive(self, verbose: bool = True):
         '''
-        Function for if user wants to inspect distance data first and
-        self assign the clustering neighbour distance cutoff. Also useful if
-        testing different potential cutoff values. This is the current default.
+        Function to inspect distance data and self assign the clustering neighbour distance cutoff. This is the current default.
+        # TODO: Implement automatic version and version where one can specify number of clusters
 
             Parameters:
                 self: object, the ClusterMaker object.
+                verbose: bool, if true more verbosity is outputed
 
             Returns:
                 sub_arrs: dict, n_arr subdivided into dict of cluster number keys
@@ -378,7 +386,7 @@ class ClusterMaker():
         '''
         def get_numeric(splitme):
             '''
-            Will read str and return integer values.
+            Helper function that reads string and returns integer values.
             '''
             delimiters = [" ", ",", "[", "]", ")", "("]
             cleaned = splitme
@@ -387,11 +395,13 @@ class ClusterMaker():
             digs = [int(s) for s in cleaned.split() if s.isdigit()]
             return digs
 
-        # Generate distance data
-        self.data = 1 - self.sim_data
+        # Generate distance data 
+        # if sim_data[i][j] = 1 we have a perfect score, or equivalently self.data = 0
+        self.data = 1 - self.sim_data_
+
         # Output distance info to user.
         x, dists = _k_dist(self.data)
-        auto_cutoff = _find_max_curvature(x, dists, plot_path=self.plot_folder, savefigs=True, verbose=verbose)
+        auto_cutoff = _find_max_curvature(x, dists, plot_path=self.plot_folder_, savefigs=True, verbose=verbose)
 
         print("auto_cutoff was determined to be ", auto_cutoff)
 
@@ -402,29 +412,28 @@ class ClusterMaker():
             user_cutoff = auto_cutoff
         else:
             user_cutoff = float(input_cutoff)
-        # Do Clustering.
+        
+        # Do Clustering according to dbscan (Note that dbscan normally sets noise to cluster -1)
         labels, mask, n_clusters_ = _dbscan(self.data, dist_cutoff=user_cutoff, min_s = 2)
         
-        ax = self.plotter.plt_cluster(self.data, labels)
+        ax = self.plotter_.plt_cluster(self.data, labels)
         
         # Output table for user cluster selection
-        # Modify to just print clusters and create a sdf file useful for pyeds
-        
         if verbose:
             plt.show()
     
 
         # Figure saving
-        output_path = os.path.join(self.plot_folder, "output.pdf")
+        output_path = os.path.join(self.plot_folder_, "output.pdf")
         pdf = matplotlib.backends.backend_pdf.PdfPages(output_path)
-        fig1 = self.plotter.plt_cluster(self.data, labels)
-        fig2 = self.plotter.plt_dbscan(self.data, labels, mask, n_clusters_)
+        fig1 = self.plotter_.plt_cluster(self.data, labels)
+        fig2 = self.plotter_.plt_dbscan(self.data, labels, mask, n_clusters_)
         pdf.savefig(fig1, bbox_inches= "tight", pad_inches=0.5)
         pdf.savefig(fig2)
         pdf.close()
 
         # Generate sub-arrays of clusters. Stored in dictionaries.
-        sub_arr, sub_ID = _sub_arrays(labels, self.sim_data, self.ID_List)
+        sub_arr, sub_ID = _sub_arrays(labels, self.sim_data_, self.ID_List)
 
         return sub_arr, sub_ID
 
@@ -432,6 +441,7 @@ class ClusterMaker():
 
     def clusters_w_ref(ref_ligs, sub_ID):
         '''
+        # TODO:
         Find which clusters contain reference ligands.
         Input a list of reference ligand names and check
         which cluster it is found in in dict sub_ID.
@@ -469,25 +479,23 @@ class ClusterMaker():
 
 
     def cluster_auto(self,data, ID_list, **kwargs):
-        ''' The full automated sequence, not including outputting new arrays'''
+        ''' 
+        TODO:
+        The fully automated sequence, not including outputting new arrays
+        '''
         # Clean ID list if needed, func in utils.
         _clean_ID_list(ID_list)
         # Make output plots for PDF
         pdf = matplotlib.backends.backend_pdf.PdfPages("output.pdf")
         x, dists = _k_dist(data)
         epsilon_fit = _find_max_curvature(x, dists, savefigs=True)
-        labels, mask, n_clusters_ = _dbscan(data, self.plot_folder)
-        fig1 = self.plotter.plt_cluster(data, labels, ID_list)
-        fig2 = self.plotter.plt_dbscan(data, labels, mask, n_clusters_)
+        labels, mask, n_clusters_ = _dbscan(data, self.plot_folder_)
+        fig1 = self.plotter_.plt_cluster(data, labels, ID_list)
+        fig2 = self.plotter_.plt_dbscan(data, labels, mask, n_clusters_)
         pdf.savefig(fig1)
         pdf.savefig(fig2)
         pdf.close()
         return labels
-    
-    def get_clusters(self, type : str, threshold : float):
-        # TODO:
-        pass
-
 
 class Plotter():
     '''
@@ -500,7 +508,7 @@ class Plotter():
 
     def __init__(self, id_list, plot_folder = "plots"):
         self.ID_list = id_list
-        self.plot_folder = plot_folder
+        self.plot_folder_ = plot_folder
     def plt_heatmap(self, data, ax, fig, **kwargs):
             '''
             Plots a heatmap of the chemical distances that will be clustered.
@@ -600,7 +608,7 @@ class Plotter():
                 markersize=6,
             )
         plt.title("Estimated number of clusters: %d" % n_clusters_)
-        dbscan_path = os.path.join(self.plot_folder, "dbscan_plot.png")
+        dbscan_path = os.path.join(self.plot_folder_, "dbscan_plot.png")
         plt.savefig(dbscan_path, dpi=300)
         return fig
 
@@ -687,7 +695,7 @@ class Plotter():
         # Add figure labels and titles
         ax.set_ylabel('Ligand IDs')
         plt.title('Cluster Regions', pad=20)
-        cluster_regions_path = os.path.join(self.plot_folder, "cluster_regions.png")
+        cluster_regions_path = os.path.join(self.plot_folder_, "cluster_regions.png")
         plt.savefig(cluster_regions_path, dpi=300, bbox_inches='tight')
         return ax
     
@@ -714,7 +722,7 @@ class Plotter():
         axs[0].set_title('Cluster Regions', pad = 15)
         axs[1].set_title('Heatmap of chemical distance', pad = 15)
         fig.tight_layout()
-        cluster_regions_heatmap_path = os.path.join(self.plot_folder, "cluster_regions_heatmap.png")
+        cluster_regions_heatmap_path = os.path.join(self.plot_folder_, "cluster_regions_heatmap.png")
         fig.savefig(cluster_regions_heatmap_path, dpi=300)
         return fig
 
