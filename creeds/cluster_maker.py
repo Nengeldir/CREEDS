@@ -332,8 +332,10 @@ class ClusterMaker():
         '''
 
         # Start interactive sequence to determine clusters, clusters are saved in sub_IDs, where sub_arrs gets the distance matrix of the cluster
-         
-        self.sub_arrs_, self.sub_IDs_ = self.cluster_interactive()
+        if interactive:
+            self.sub_arrs_, self.sub_IDs_ = self.cluster_interactive()
+        else:
+            self.sub_arrs_, self.sub_IDs_ = self.cluster_auto()
 
         clustering = "{"
 
@@ -370,7 +372,7 @@ class ClusterMaker():
         '''
         return self.db_mol
     
-    def cluster_interactive(self, verbose: bool = True):
+    def cluster_interactive(self, verbose: bool = True, auto : bool = False):
         '''
         Function to inspect distance data and self assign the clustering neighbour distance cutoff. This is the current default.
         # TODO: Implement automatic version and version where one can specify number of clusters
@@ -378,6 +380,7 @@ class ClusterMaker():
             Parameters:
                 self: object, the ClusterMaker object.
                 verbose: bool, if true more verbosity is outputed
+                auto: bool, if true the auto cutoff is taken
 
             Returns:
                 sub_arrs: dict, n_arr subdivided into dict of cluster number keys
@@ -405,13 +408,17 @@ class ClusterMaker():
 
         print("auto_cutoff was determined to be ", auto_cutoff)
 
-        # Get user input on distance cutoff, epsilon in dbscan, typed
-        input_cutoff = input("Enter a neighbor distance cutoff for clustering:")
-        if input_cutoff == "":
-            # If enter, set to autodetected cutoff
+        if auto:
+            print("Taking auto cutoff as auto is set to True.")
             user_cutoff = auto_cutoff
         else:
-            user_cutoff = float(input_cutoff)
+            # Get user input on distance cutoff, epsilon in dbscan, typed
+            input_cutoff = input("Enter a neighbor distance cutoff for clustering:")
+            if input_cutoff == "":
+                # If enter, set to autodetected cutoff
+                user_cutoff = auto_cutoff
+            else:
+                user_cutoff = float(input_cutoff)
         
         # Do Clustering according to dbscan (Note that dbscan normally sets noise to cluster -1)
         labels, mask, n_clusters_ = _dbscan(self.data, dist_cutoff=user_cutoff, min_s = 2)
@@ -436,8 +443,6 @@ class ClusterMaker():
         sub_arr, sub_ID = _sub_arrays(labels, self.sim_data_, self.ID_List_)
 
         return sub_arr, sub_ID
-
-
 
     def clusters_w_ref(ref_ligs, sub_ID):
         '''
@@ -476,26 +481,6 @@ class ClusterMaker():
                 # Delete keys w empty lists.
                 del sub_refs[k]
         return cluster_set, sub_refs
-
-
-    def cluster_auto(self,data, ID_list, **kwargs):
-        ''' 
-        TODO:
-        The fully automated sequence, not including outputting new arrays
-        '''
-        # Clean ID list if needed, func in utils.
-        _clean_ID_list(ID_list)
-        # Make output plots for PDF
-        pdf = matplotlib.backends.backend_pdf.PdfPages("output.pdf")
-        x, dists = _k_dist(data)
-        epsilon_fit = _find_max_curvature(x, dists, savefigs=True)
-        labels, mask, n_clusters_ = _dbscan(data, self.plot_folder_)
-        fig1 = self.plotter_.plt_cluster(data, labels, ID_list)
-        fig2 = self.plotter_.plt_dbscan(data, labels, mask, n_clusters_)
-        pdf.savefig(fig1)
-        pdf.savefig(fig2)
-        pdf.close()
-        return labels
     
     def writeIdList(self, ID_File):
         '''
@@ -767,7 +752,7 @@ if __name__ == "__main__":
     #cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
     #cmaker.create_clusters()
 
-    matplotlib.use('TkAgg')
+    #matplotlib.use('TkAgg')
     #TODO: fix plots so that they are saved in the correct Folder
     cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', 
                           loadMatrix_ = True,
