@@ -162,4 +162,5 @@ creeds/__pycache__/utils.cpython-39.pyc
 
 
 *.pyc
-output/**/*.sdf
+*.sdf
+*.npy
