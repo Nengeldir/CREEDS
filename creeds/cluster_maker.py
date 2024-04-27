@@ -197,9 +197,9 @@ class ClusterMaker():
         
         
         if loadMatrix_:
-            if os.path.exists(self.loadFile_):
-                print("Loading Similarity Matrix from file: ", self.loadFile_)
-                self.sim_data_ = np.load(self.loadFile_)
+            if os.path.exists(loadFile_):
+                print("Loading Similarity Matrix from file: ", loadFile_)
+                self.sim_data_ = np.load(loadFile_)
             else:
                 raise ValueError("Similarity File does not exist at given location ", self.loadFile_)
         else:
@@ -235,9 +235,9 @@ class ClusterMaker():
         self.output_file_ = output_file_
         self.loadFile_ = loadFile_
         self.n_arr = _clean_NaN(self.sim_data_)
-        self.ID_List = _clean_ID_list(_getID(self.db_mol, self.n_arr))
+        self.ID_List_ = _clean_ID_list(_getID(self.db_mol, self.n_arr))
         self.plot_folder_ = plot_folder_
-        self.plotter_ = Plotter(self.ID_List, self.plot_folder_)
+        self.plotter_ = Plotter(self.ID_List_, self.plot_folder_)
         self.sub_arrs_ = None
         self.sub_IDs_ = None
         self.clustering_ = None
@@ -351,12 +351,12 @@ class ClusterMaker():
 
         clustering += "}"
 
-        self.clustering = json.parse(clustering)
+        self.clustering_ = json.loads(clustering)
 
-        with open(self.output_file, 'w') as f:
+        with open(self.output_file_, 'w') as f:
             f.write(clustering)
 
-        print("Wrote Clustering to ", self.output_file, " as json.")
+        print("Wrote Clustering to ", self.output_file_, " as json.")
         
     def getDBMolecules(self):
         '''
@@ -433,7 +433,7 @@ class ClusterMaker():
         pdf.close()
 
         # Generate sub-arrays of clusters. Stored in dictionaries.
-        sub_arr, sub_ID = _sub_arrays(labels, self.sim_data_, self.ID_List)
+        sub_arr, sub_ID = _sub_arrays(labels, self.sim_data_, self.ID_List_)
 
         return sub_arr, sub_ID
 
@@ -496,6 +496,38 @@ class ClusterMaker():
         pdf.savefig(fig2)
         pdf.close()
         return labels
+    
+    def writeIdList(self, ID_File):
+        '''
+        This function writes out the ID_Files as a json file. It is useful for the randomizer module which needs the IDs of the ligands.
+        The structure is the following: 
+        {
+            ligand_1 : 1
+            ligand_2 : 2
+            .
+            .
+            .
+            ligand_N : N
+        }
+        '''
+
+        output = "{"
+
+        for i, ligand in enumerate(self.ID_List_):
+            output += "\"" + ligand + "\"" + " : " + str(i)
+
+            if i != len(self.ID_List_) - 1:
+                output += ",\n"
+
+
+        output += "}"
+
+        json_object = json.loads(output)
+        #self.clustering_ = json.loads(output)
+
+        with open(ID_File, 'w') as f:
+            f.write(output)
+
 
 class Plotter():
     '''
@@ -735,15 +767,19 @@ if __name__ == "__main__":
     #cmaker.saveDistanceMatrix("distance_matrix_FullFreeSolv.npy")
     #cmaker.create_clusters()
 
-    #matplotlib.use('TkAgg')
+    matplotlib.use('TkAgg')
     #TODO: fix plots so that they are saved in the correct Folder
     cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', 
-                          loadMatrix = False, 
-                          method = "MCMS", 
-                          output_file = "/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_cluster04_c_MCMS.json", 
+                          loadMatrix_ = True,
+                          loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy", 
+                          method_ = "MCSS", 
+                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_cluster04_c_MCMS.json", 
                           parallel_ = 6,
                           plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/plots/')
+
+    print(cmaker.ID_List_)
     cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy")
+    cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04_IDs.json")
     cmaker.create_clusters()
 
     

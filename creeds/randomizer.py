@@ -1,6 +1,8 @@
+from itertools import combinations
 from random import sample
 from typing import List, Optional
 import json
+import numpy as np
 from kartograf.atom_aligner import align_mol_skeletons
 from gufe import SmallMoleculeComponent
 from rdkit import Chem
@@ -71,15 +73,36 @@ def alignClusters(ClusterMap : str, concatSDF_dir : str, output_dir: str, return
             with open(output_dir + "visualization/" + cluster_name + ".svg", "w") as f:
                 f.write(SVG)
 
+def find(i, parent):
+    '''
+    Find the set of vertex i
+    '''
+    while parent[i] != i:
+        i = parent[i]
+    return i
+
+def union(i, j, parent):
+    '''
+    Does the union of two sets. It returns false if i and j are already in the same set
+    '''
+    a = find(i, parent)
+    b = find(j, parent)
+    parent[a] = b
+
+
+
 def randomize_cluster_based(cluster_map : str, 
                             sdf_files : str, 
                             output_dir: str, 
-                            simulation_clsuter_map = "simClusterMap.json",
+                            simulation_cluster_map = "simClusterMap.json",
                             max_num_simulations: int = 10,
                             fix_simulation_num : bool = True,
                             fix_ligand_num : bool = True,
                             numLigands_per_sim : int = 15,
-                            returnSVG = True
+                            returnSVG = True,
+                            simpleOverlap: bool = False,
+                            distanceMatrix : str = "FFS_cluster04.npy",
+                            ID_file : str = "FFS_cluster04_IDs.json"
                             ):
     '''
     takes in a cluster_map, returns a partition with overlap to simulate in REEDS
@@ -127,12 +150,82 @@ def randomize_cluster_based(cluster_map : str,
     num_simulations = len(simulation_ligands.keys())
 
     # Make the simulation liands overlapping i.e. add the next ligand to the set
-    simulation_keys = list(simulation_ligands.keys())
-    for i, cluster in enumerate(simulation_keys):
-        next_key = (i + 1) % num_simulations
-        next_cluster_name = simulation_keys[next_key]
-        simulation_ligands[cluster].append(simulation_ligands[next_cluster_name][0])
-    
+    if simpleOverlap: # Simple
+        simulation_keys = list(simulation_ligands.keys())
+        for i, cluster in enumerate(simulation_keys):
+            next_key = (i + 1) % num_simulations
+            next_cluster_name = simulation_keys[next_key]
+            simulation_ligands[cluster].append(simulation_ligands[next_cluster_name][0])
+    else: # Nearest neighbour MST
+
+        print("loading distance Matrix")
+        dists = np.load(distanceMatrix)
+        
+        print("loading IDs")
+        IDs = json.load(open(ID_file))
+
+        simulation_keys = list(simulation_ligands.keys())
+        cluster_dists = np.ones((len(simulation_keys), len(simulation_keys)))
+        
+        coresponding_ligands = {}
+
+        # iterate over all linkages
+        for i, cluster_a in enumerate(simulation_keys):
+            for j, cluster_b in enumerate(simulation_keys):
+                # skip if the same cluster
+                if i == j:
+                    continue
+
+                # minimal distance outside of cluster
+                min = None
+
+                min_lig_a = None
+                min_lig_b = None
+
+                # iterate over all ligands in the two clusters
+                for ligand_a in simulation_ligands[cluster_a]:
+                    for ligand_b in simulation_ligands[cluster_b]:
+                        # get the distance between the two ligands
+                        dist = dists[IDs[ligand_a], IDs[ligand_b]]
+                        if min is None or dist < min:
+                            min = dist
+                            min_lig_a = ligand_a
+                            min_lig_b = ligand_b
+
+                cluster_dists[i][j] = min
+                coresponding_ligands[(cluster_a, cluster_b)] = (min_lig_a, min_lig_b)
+
+        # find mst of the cluster_dists
+        # Kruskal's algorithm
+
+        cost = 0
+        parent = np.zeros(len(simulation_keys), dtype=int)
+        
+        # initialize the parent array
+        for i in range(len(simulation_keys)):
+            parent[i] = i
+        
+        edge_count = 0
+
+        while edge_count < len(simulation_keys) - 1:
+            min = None
+            a = -1
+            b = -1
+            for i in range(len(simulation_keys)):
+                for j in range(len(simulation_keys)):
+                    if find(i, parent) != find(j, parent) and (min is None or cluster_dists[i][j] < min):
+                        min = cluster_dists[i][j]
+                        a = i
+                        b = j
+            
+            union(a, b, parent)
+            edge_count += 1
+            cost += min
+
+        print(cost)
+        print(parent)
+                
+
     #write simulation cluster map to json and save it to file
     
     with open(output_dir + "/sim_map.json", "w") as json_out:
@@ -154,7 +247,7 @@ def randomize_cluster_based(cluster_map : str,
 
         data = Chem.SDMolSupplier(output_dir + cluster_name + ".sdf", removeHs=False)
 
-        #first atom is reference
+        #first atom i s reference
         for i, mol in enumerate(data):
             if i == 0:
                 ref = mol
@@ -273,10 +366,14 @@ def randomize(output_dir : str,
                 f.write(SVG)
     
 if __name__ == '__main__':
+
     randomize_cluster_based(
         cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/clustersFFS_cluster04_c_MCMS.json',
         sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
-        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/simulation_files/')
+        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/simulation_files/',
+        simpleOverlap = False,
+        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy',
+        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04_IDs.json')
     randomize(
         output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/simulation_files/',
         sdf_files = '/localhome/lconconi/CREEDS/input/FreeSolv/',
