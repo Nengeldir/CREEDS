@@ -316,19 +316,19 @@ def randomize(output_dir : str,
     # ------------------------
     # no max_num_Ligands (or smaller equal to 0) and no num_simulations (or smaller equal to 0) is given 
     if (max_num_Ligands is None or max_num_Ligands <= 0) and (max_num_Simulations is None or max_num_Simulations <= 0):
-        print("Please provide either max_num_Ligands or num_Simulations.")
-        print("Furthermore check that max_num_Ligands and or num_Simulation is positive and greater one.")
-        return -1
+        raise ValueError("Please provide either max_num_Ligands or num_Simulations. Furthermore check that max_num_Ligands and or num_Simulation is positive and greater one.")
 
     # no ligand_list and no cluster_map_file is given
     if ligand_list is None and cluster_map_file is None:
-        print("Either enter a list of ligands to be prepared to the REEDS simulation or enter the path to \
+        raise ValueError("Either enter a list of ligands to be prepared to the REEDS simulation or enter the path to \
               a cluster_map with the specific cluster that should be prepared.")
+
     
     # no list of ligands is given but a cluster_map without a specific cluster_name 
     if (ligand_list is None) and (cluster_map_file is not None) and (cluster_name is None):
-        print("Please enter a specific cluster_name to be prepared for the REEDS simulation, \
+        raise ValueError("Please enter a specific cluster_name to be prepared for the REEDS simulation, \
               this function only takes a single cluster in.")
+        
     
     #Errors check out, determine the ligand_list
     if ligand_list is None:
@@ -352,7 +352,7 @@ def randomize(output_dir : str,
         ligand_list = [x for x in ligand_list if x not in sim_files[sim]]
         
     
-    # Now append the best ligand to the previous subset
+    # Now append the first ligand to the previous subset
     sim_keys = list(sim_files.keys())
     for i, sim in enumerate(sim_keys):
         next_key = sim_keys[(i + 1) % len(sim_keys)]
@@ -403,12 +403,12 @@ if __name__ == '__main__':
         simpleOverlap = False,
         distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy',
         ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04_IDs.json')
-    #randomize(
-    #    output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/simulation_files/',
-    #    sdf_files = '/localhome/lconconi/CREEDS/input/FreeSolv/',
-    #    ligand_list = None,
-    #    cluster_map_file = '/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json',
-    #    cluster_name = "Cluster_4",
-    #    max_num_Simulations = 10
-    #)
+    randomize(
+        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/simulation_files/',
+        sdf_files = '/localhome/lconconi/CREEDS/input/FreeSolv/',
+        ligand_list = None,
+        cluster_map_file = '/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json',
+        cluster_name = "Cluster_4",
+        max_num_Simulations = 10
+    )
     #randomizeCluster('..//', 'clusters.json', 'randomized/', )
