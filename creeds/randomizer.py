@@ -107,10 +107,20 @@ def randomize_cluster_based(cluster_map : str,
     '''
     takes in a cluster_map, returns a partition with overlap to simulate in REEDS
 
-    parameters
-        cluster_file
-        output_dir
-        randomize_Cluster
+    parameters:
+        cluster_map: json file with the cluster map
+        sdf_files: directory with the sdf files
+        output_dir: directory to save the simulation files
+        simulation_cluster_map: json file to save the simulation cluster map
+        max_num_simulations: maximum number of simulations to perform
+        fix_simulation_num: if True, the number of simulations will be fixed to max_num_simulations
+        fix_ligand_num: if True, the number of ligands per simulation will be fixed to numLigands_per_sim
+        numLigands_per_sim: number of ligands per simulation
+        returnSVG: if True, return SVG files of the aligned molecules
+        simpleOverlap: if True, the ligands will be overlapping by a simple chain
+        distanceMatrix: distance matrix of the ligands used in the clustering phase
+        ID_file: json file with the IDs of the ligands used in the clustering phase
+        
     '''
     # create random overlapping sets of numLigands
     # num Ligands is meant without the overlap
@@ -165,6 +175,7 @@ def randomize_cluster_based(cluster_map : str,
         IDs = json.load(open(ID_file))
 
         simulation_keys = list(simulation_ligands.keys())
+        # cluster distances
         cluster_dists = np.ones((len(simulation_keys), len(simulation_keys)))
         
         coresponding_ligands = {}
@@ -218,26 +229,36 @@ def randomize_cluster_based(cluster_map : str,
                         a = i
                         b = j
             
+            #TODO: add the ligands to the simulation_ligands
+
             union(a, b, parent)
             edge_count += 1
             cost += min
+            simulation_ligands[simulation_keys[a]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][1])
+            simulation_ligands[simulation_keys[b]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][0])
 
-        print(cost)
-        print(parent)
+        print("additional cost ", cost)
+        print("parent array ", parent)
+        print("edge_count ", edge_count)
+        print("coresponding ligands ", coresponding_ligands)
                 
 
     #write simulation cluster map to json and save it to file
-    
-    with open(output_dir + "/sim_map.json", "w") as json_out:
+    sim_map_path = os.path.join(output_dir, simulation_cluster_map)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    with open(sim_map_path, "w") as json_out:
         json_sim_map = json.dumps(simulation_ligands)
         json_out.write(json_sim_map)
 
     #concatenate single sdf files into the specific clustered sdf files
 
     for cluster_name in simulation_ligands.keys():
-        with open(output_dir + cluster_name + ".sdf", "w") as sim_sdf:
+        cluster_path = os.path.join(output_dir, cluster_name + ".sdf")
+        with open(cluster_path, "w") as sim_sdf:
             for ligand in simulation_ligands[cluster_name]:
-                lig = open(sdf_files + ligand + ".sdf", "r")
+                lig_path = os.path.join(sdf_files, ligand + ".sdf")
+                lig = open(lig_path, "r")
                 sim_sdf.write(lig.read())
     
 
@@ -245,7 +266,8 @@ def randomize_cluster_based(cluster_map : str,
     for cluster_name in simulation_ligands.keys():
         molecules = []
 
-        data = Chem.SDMolSupplier(output_dir + cluster_name + ".sdf", removeHs=False)
+        data_path = os.path.join(output_dir, cluster_name + ".sdf")
+        data = Chem.SDMolSupplier(data_path, removeHs=False)
 
         #first atom i s reference
         for i, mol in enumerate(data):
@@ -267,7 +289,14 @@ def randomize_cluster_based(cluster_map : str,
         if returnSVG:
             rd_kit = [mol for mol in molecules]
             SVG = Chem.Draw.MolsToGridImage(rd_kit, useSVG=True, molsPerRow=10)
-            with open(output_dir + "visualization/" + cluster_name + ".svg", "w") as f:
+            svg_folder_path = os.path.join(output_dir, "visualization")
+            
+            if not os.path.exists(svg_folder_path):
+                os.makedirs(svg_folder_path)
+
+            svg_path = os.path.join(svg_folder_path, cluster_name + ".svg")
+
+            with open(svg_path, "w") as f:
                 f.write(SVG)
 
   
@@ -370,16 +399,16 @@ if __name__ == '__main__':
     randomize_cluster_based(
         cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/clustersFFS_cluster04_c_MCMS.json',
         sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
-        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/simulation_files/',
+        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst/',
         simpleOverlap = False,
         distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy',
         ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04_IDs.json')
-    randomize(
-        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/simulation_files/',
-        sdf_files = '/localhome/lconconi/CREEDS/input/FreeSolv/',
-        ligand_list = None,
-        cluster_map_file = '/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json',
-        cluster_name = "Cluster_4",
-        max_num_Simulations = 10
-    )
+    #randomize(
+    #    output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/simulation_files/',
+    #    sdf_files = '/localhome/lconconi/CREEDS/input/FreeSolv/',
+    #    ligand_list = None,
+    #    cluster_map_file = '/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json',
+    #    cluster_name = "Cluster_4",
+    #    max_num_Simulations = 10
+    #)
     #randomizeCluster('..//', 'clusters.json', 'randomized/', )
