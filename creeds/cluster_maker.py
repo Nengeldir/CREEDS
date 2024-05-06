@@ -1,7 +1,6 @@
 import lomap
 import json
 import os
-
 import numpy as np
 from typing import List, Optional
 from tempfile import TemporaryFile
@@ -16,7 +15,8 @@ from rdkit.Chem import rdMolAlign
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdFMCS
 
-from utils import _clean_NaN, _getID, _clean_ID_list, _k_dist, _find_max_curvature, _dbscan, _sub_arrays
+from utils import _clean_NaN, _getID, \
+    _clean_ID_list, _k_dist, _find_max_curvature, _dbscan, _sub_arrays, _spectral
 
 
 from scipy import interpolate
@@ -32,29 +32,7 @@ class ClusterMaker():
                  output_file_: str = "clusters.json",
                  method_: str = "MCS",
                  plot_folder_: str = "plots/",
-                 parallel_: int = 4,
-                 verbose_: str = 'off',
-                 time_ : int = 20,
-                 ecrscore_: float = 0.0,
-                 threed_: bool = False,
-                 max3d_: float = 1000.0,
-                 element_change_ : bool = True,
-                 output_: bool = False,
-                 name_: str = "CREEDS_out",
-                 output_no_images_: bool = False,
-                 output_no_graph_: bool = False,
-                 display_: bool = False,
-                 allow_tree_: bool = False,
-                 max_: int = 6,
-                 cutoff_: float = 0.4,
-                 radial_: bool = False,
-                 hub_: Optional[str] = None,
-                 fast_: bool = False,
-                 links_file_: Optional[str] = None,
-                 known_actives_file_: Optional[str] = None,
-                 max_dist_from_actives_: int = 2,
-                 use_common_core_: bool = True,
-                 shift_: bool = True
+                 **kwargs
                  ):
         '''
         This class is used to create clusters of ligands based on their similarity scores.
@@ -170,29 +148,29 @@ class ClusterMaker():
         
 
         self.db_mol = lomap.DBMolecules(directory = filePath_, 
-                                        parallel = parallel_,
-                                        verbose = verbose_,
-                                        time = time_,
-                                        ecrscore = ecrscore_,
-                                        threed = threed_,
-                                        max3d = max3d_,
-                                        element_change = element_change_,
-                                        output = output_,
-                                        name = name_,
-                                        output_no_images = output_no_images_,
-                                        output_no_graph = output_no_graph_,
-                                        display = display_,
-                                        allow_tree = allow_tree_,
-                                        max = max_,
-                                        cutoff = cutoff_,
-                                        radial = radial_,
-                                        hub = hub_,
-                                        fast = fast_,
-                                        links_file = links_file_,
-                                        known_actives_file = known_actives_file_,
-                                        max_dist_from_actives = max_dist_from_actives_,
-                                        use_common_core = use_common_core_,
-                                        shift = shift_
+                                        parallel = kwargs.get('parallel', 4),
+                                        verbose = kwargs.get('verbose', 'off'),
+                                        time = kwargs.get('time', 20),
+                                        ecrscore = kwargs.get('ecrscore', 0.0),
+                                        threed = kwargs.get('threed', False),
+                                        max3d = kwargs.get('max3d', 1000.0),
+                                        element_change = kwargs.get('element_change', True),
+                                        output = kwargs.get('output', False),
+                                        name = kwargs.get('name', "CREEDS_out"),
+                                        output_no_images = kwargs.get('output_no_images', False),
+                                        output_no_graph = kwargs.get('output_no_graph', False),
+                                        display = kwargs.get('display', False),
+                                        allow_tree = kwargs.get('allow_tree', False),
+                                        max = kwargs.get('max', 6),
+                                        cutoff = kwargs.get('cutoff', 0.4),
+                                        radial = kwargs.get('radial', False),
+                                        hub = kwargs.get('hub', None),
+                                        fast = kwargs.get('fast', False),
+                                        links_file = kwargs.get('links_file', None),
+                                        known_actives_file = kwargs.get('known_actives_file', None),
+                                        max_dist_from_actives = kwargs.get('max_dist_from_actives', 2),
+                                        use_common_core = kwargs.get('use_common_core', True),
+                                        shift = kwargs.get('shift', True)
                                         )
         
         
@@ -201,7 +179,7 @@ class ClusterMaker():
                 print("Loading Similarity Matrix from file: ", loadFile_)
                 self.sim_data_ = np.load(loadFile_)
             else:
-                raise ValueError("Similarity File does not exist at given location ", self.loadFile_)
+                raise ValueError("Similarity File does not exist at given location ", loadFile_)
         else:
             if method_ == "MCSS":
 
@@ -296,7 +274,7 @@ class ClusterMaker():
         print(db_mol._list)
         pass
     
-    def saveDistanceMatrix(self, path : str):
+    def saveDistanceMatrix(self, path : str) -> None:
         '''
         Save the Similartiy/Distance matrix to a file.
 
@@ -313,9 +291,47 @@ class ClusterMaker():
         Returns the Similarity/Distance Matrix. 
         '''
         return self.sim_data_
-        
     
-    def create_clusters(self):
+    def cluster_spectral(self, auto : bool = False, verbose : bool = True) -> tuple[dict, dict]:
+        '''
+        This function creates clusters using the K-Means algorithm. The function uses the KMeans algorithm implemented in
+        the sklearn package.
+
+        Parameters:
+            self: object, the ClusterMaker object.
+            auto: bool, if true the auto cutoff is taken
+            verbose: bool, if true more verbosity is outputed
+
+        Returns:
+            sub_arrs: dict, n_arr subdivided into dict of cluster number keys
+            sub_IDs: dict, ID_list subdivided into dict of cluster number keys
+        '''
+        self.data = 1 - self.sim_data_
+        labels, mask, n_clusters_ = _spectral(self.data, verbose = verbose)
+
+        ax = self.plotter_.plt_cluster(self.data, labels)
+        
+        # Output table for user cluster selection
+        if verbose:
+            plt.show()
+    
+
+        # Figure saving
+        output_path = os.path.join(self.plot_folder_, "output.pdf")
+        pdf = matplotlib.backends.backend_pdf.PdfPages(output_path)
+        fig1 = self.plotter_.plt_cluster(self.data, labels)
+        fig2 = self.plotter_.plt_dbscan(self.data, labels, mask, n_clusters_)
+        pdf.savefig(fig1, bbox_inches= "tight", pad_inches=0.5)
+        pdf.savefig(fig2)
+        pdf.close()
+
+        # Generate sub-arrays of clusters. Stored in dictionaries.
+        sub_arr, sub_ID = _sub_arrays(labels, self.sim_data_, self.ID_List_)
+
+        return sub_arr, sub_ID
+
+    
+    def create_clusters(self, interactive: bool = True, algorithm : str = "dbscan", verbose : bool = True, num_clusters : int = -1) -> json:
         '''
         This function is used to create clusters of ligands based on their similarity scores. There needs to be a sensible distancematrix saved in self.simdata_
         It uses the Plotter class to plot the distance matrix and the clusters.
@@ -326,16 +342,22 @@ class ClusterMaker():
 
         Parameters:
             self: object, the ClusterMaker object.
-
+            interactive: bool, if true the auto cutoff/cluster number is taken
+            algorithm: str, the algorithm used for clustering, either dbscan or K-Means
         Returns:
-            None
+            Clustering: json, parsed json object that contains the clustering information, it is also saved in the class
+            for later use.
         '''
 
         # Start interactive sequence to determine clusters, clusters are saved in sub_IDs, where sub_arrs gets the distance matrix of the cluster
-        if interactive:
-            self.sub_arrs_, self.sub_IDs_ = self.cluster_interactive()
-        else:
-            self.sub_arrs_, self.sub_IDs_ = self.cluster_auto()
+        
+        if algorithm not in ["dbscan", "spectral"]:
+            raise ValueError("Invalid algorithm. Please use 'dbscan' or 'K-Means'")
+        
+        if algorithm == "dbscan":
+            self.sub_arrs_, self.sub_IDs_ = self.cluster_interactive(auto=interactive, verbose = verbose)
+        elif algorithm == "spectral":
+            self.sub_arrs_, self.sub_IDs_ = self.cluster_spectral(auto = interactive, verbose = verbose)
 
         clustering = "{"
 
@@ -359,6 +381,8 @@ class ClusterMaker():
             f.write(clustering)
 
         print("Wrote Clustering to ", self.output_file_, " as json.")
+
+        return self.clustering_
         
     def getDBMolecules(self):
         '''
@@ -372,7 +396,7 @@ class ClusterMaker():
         '''
         return self.db_mol
     
-    def cluster_interactive(self, verbose: bool = True, auto : bool = False):
+    def cluster_interactive(self, verbose: bool = True, auto : bool = False) -> tuple[dict, dict]:
         '''
         Function to inspect distance data and self assign the clustering neighbour distance cutoff. This is the current default.
         # TODO: Implement automatic version and version where one can specify number of clusters
@@ -755,16 +779,16 @@ if __name__ == "__main__":
     #matplotlib.use('TkAgg')
     #TODO: fix plots so that they are saved in the correct Folder
     cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', 
-                          loadMatrix_ = True,
+                          loadMatrix_ = False,
                           loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy", 
                           method_ = "MCSS", 
-                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_cluster04_c_MCMS.json", 
+                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_cluster04_c_MCMS_spectral.json", 
                           parallel_ = 6,
-                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/plots/')
+                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/plots/')
 
     print(cmaker.ID_List_)
-    cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy")
-    cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04_IDs.json")
-    cmaker.create_clusters()
+    cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04.npy")
+    cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_IDs.json")
+    cmaker.create_clusters(algorithm="spectral")
 
     

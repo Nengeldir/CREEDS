@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, SpectralClustering
 from kneed import KneeLocator, DataGenerator
 import sys
 import os
+
+
 
 def _clean_NaN(sim_np):
     '''
@@ -174,6 +176,42 @@ def _find_max_curvature(x, dists, plot_path='plots/', **kwargs):
     '''
     
     return e_fit
+
+def _spectral(X, n_clusters, **kwargs):
+    '''
+    Peforms clustering using Spectral Clustering.
+    
+        Parameters:
+            X: 2D distance matrix from similarity.
+            n_clusters: number of clusters to find
+        Optional Parameters:
+            n_init: number of times the k-means algorithm will be run
+                    with different centroid seeds
+                    default = 10
+        Returns:
+            labels: array of cluster numbers by ligand
+            core_samples_mask: filters clusters
+            n_clusters_: the number of clusters
+    '''
+    # Define optional arugments
+    # Number of times the k-means algorithm will be run
+    n_init = kwargs.get('n_init', 10)
+    if n_init is None:
+        n_init = 10
+    else:
+        n_init = n_init
+
+    # Find clusters.
+    sc = SpectralClustering(n_clusters=n_clusters, affinity='precomputed',
+                            n_init=n_init).fit(X)
+    labels = sc.labels_
+    n_clusters_ = len(set(labels))
+    n_noise_ = list(labels).count(-1)
+    # Print cluster information for user.
+    print("Estimated number of clusters: %d" % n_clusters_)
+    print("Estimated number of noise points: %d" % n_noise_)
+
+    return labels, n_clusters_
 
 def _dbscan(X, max_searches = 10, plot_path = 'plots/', **kwargs):
     '''
