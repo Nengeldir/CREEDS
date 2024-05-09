@@ -292,7 +292,7 @@ class ClusterMaker():
         '''
         return self.sim_data_
     
-    def cluster_spectral(self, auto : bool = False, verbose : bool = True) -> tuple[dict, dict]:
+    def cluster_spectral(self, num_clusters, auto : bool = False, verbose : bool = True) -> tuple[dict, dict]:
         '''
         This function creates clusters using the K-Means algorithm. The function uses the KMeans algorithm implemented in
         the sklearn package.
@@ -307,7 +307,7 @@ class ClusterMaker():
             sub_IDs: dict, ID_list subdivided into dict of cluster number keys
         '''
         self.data = 1 - self.sim_data_
-        labels, mask, n_clusters_ = _spectral(self.data, verbose = verbose)
+        labels, mask = _spectral(self.data, verbose = verbose, num_clusters = num_clusters)
 
         ax = self.plotter_.plt_cluster(self.data, labels)
         
@@ -315,7 +315,7 @@ class ClusterMaker():
         if verbose:
             plt.show()
     
-
+        n_clusters_ = len(labels)
         # Figure saving
         output_path = os.path.join(self.plot_folder_, "output.pdf")
         pdf = matplotlib.backends.backend_pdf.PdfPages(output_path)
@@ -357,7 +357,7 @@ class ClusterMaker():
         if algorithm == "dbscan":
             self.sub_arrs_, self.sub_IDs_ = self.cluster_interactive(auto=interactive, verbose = verbose)
         elif algorithm == "spectral":
-            self.sub_arrs_, self.sub_IDs_ = self.cluster_spectral(auto = interactive, verbose = verbose)
+            self.sub_arrs_, self.sub_IDs_ = self.cluster_spectral(auto = interactive, verbose = verbose, num_clusters = num_clusters)
 
         clustering = "{"
 
@@ -782,13 +782,13 @@ if __name__ == "__main__":
                           loadMatrix_ = False,
                           loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy", 
                           method_ = "MCSS", 
-                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_cluster04_c_MCMS_spectral.json", 
+                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_c_MCMS_spectral.json", 
                           parallel_ = 6,
                           plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/plots/')
 
     print(cmaker.ID_List_)
     cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04.npy")
     cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_IDs.json")
-    cmaker.create_clusters(algorithm="spectral")
+    cmaker.create_clusters(algorithm="spectral", num_clusters=10)
 
     

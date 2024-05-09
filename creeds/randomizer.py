@@ -396,19 +396,28 @@ def randomize(output_dir : str,
     
 if __name__ == '__main__':
 
+    # randomize_cluster_based(
+    #     cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/clustersFFS_cluster04_c_MCMS.json',
+    #     sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
+    #     output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst/',
+    #     simpleOverlap = False,
+    #     distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy',
+    #     ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04_IDs.json')
+    # randomize(
+    #     output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/simulation_files/',
+    #     sdf_files = '/localhome/lconconi/CREEDS/input/FreeSolv/',
+    #     ligand_list = None,
+    #     cluster_map_file = '/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json',
+    #     cluster_name = "Cluster_4",
+    #     max_num_Simulations = 10
+    # )
     randomize_cluster_based(
-        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/clustersFFS_cluster04_c_MCMS.json',
-        sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
-        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst/',
-        simpleOverlap = False,
-        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy',
-        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04_IDs.json')
-    randomize(
-        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/simulation_files/',
-        sdf_files = '/localhome/lconconi/CREEDS/input/FreeSolv/',
-        ligand_list = None,
-        cluster_map_file = '/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json',
-        cluster_name = "Cluster_4",
-        max_num_Simulations = 10
-    )
+        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/clustersFFS_cluster04_c_MCMS_spectral.json',
+        sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/sdf_files/',
+        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/',
+        simpleOverlap = True,
+        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/FFS_cluster04.npy',
+        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/FFS_cluster04_IDs.json'
+        )
+    
     #randomizeCluster('..//', 'clusters.json', 'randomized/', )
