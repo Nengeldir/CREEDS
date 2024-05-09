@@ -131,9 +131,8 @@ def randomize_cluster_based(cluster_map : str,
     # if there are too many Ligands in one cluster depending on the mode split them randomly or throw an exception to the user
     # if there are too many Clusters based on the mode clump the fewest ones together or throw an exception to the user
 
-    
-    if len(cluster_json.keys()) <= max_num_simulations:
-        if fix_simulation_num:
+    if fix_simulation_num:
+        if len(cluster_json.keys()) <= max_num_simulations:
             pass # TODO:
         else:
             print("The number of clusters is more than the specified number of simulations, \
@@ -147,6 +146,7 @@ def randomize_cluster_based(cluster_map : str,
 
         if numLigands_per_sim < numMolecules:
             if fix_ligand_num:
+                print("Cluster: ", cluster_name)
                 pass # TODO:
             else:
                 print("The cluster ", cluster_name, " has too many ligands in regards to the number of \
@@ -412,12 +412,15 @@ if __name__ == '__main__':
     #     max_num_Simulations = 10
     # )
     randomize_cluster_based(
-        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/clustersFFS_cluster04_c_MCMS_spectral.json',
+        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_c_MCMS_spectral.json',
         sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/sdf_files/',
         output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/',
         simpleOverlap = True,
-        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/FFS_cluster04.npy',
-        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/FFS_cluster04_IDs.json'
+        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spetral/FFS_cluster04.npy',
+        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_IDs.json',
+        fix_ligand_num = False,
+        fix_simulation_num = False,
+        numLigands_per_sim= 20
         )
     
     #randomizeCluster('..//', 'clusters.json', 'randomized/', )

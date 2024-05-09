@@ -176,10 +176,10 @@ class ClusterMaker():
         
         if loadMatrix_:
             if os.path.exists(loadFile_):
-                print("Loading Similarity Matrix from file: ", loadFile_)
+                print(f"Loading Similarity Matrix from file:  {loadFile_}")
                 self.sim_data_ = np.load(loadFile_)
             else:
-                raise ValueError("Similarity File does not exist at given location ", loadFile_)
+                raise ValueError(f"Similarity File does not exist at given location {loadFile_}")
         else:
             if method_ == "MCSS":
 
@@ -232,14 +232,14 @@ class ClusterMaker():
                 db_mol: object, the lomap.DBMolecules object.
 
             Returns:
-                shape matrix for the ligands.
+                shape matrix for the ligands as numpy array
+                It saves the Lomap SMatrix in self.strict_
         '''
-        #TODO: test
-        self.sim_data_ = lomap.SMatrix(shape=(len(db_mol._list), ))
+        self.strict_ = lomap.SMatrix(shape=(len(db_mol._list), ))
         for i, mol_a in enumerate(db_mol._list):
             for j, mol_b in enumerate(db_mol._list):
                 if i == j:
-                    self.sim_data_[i, j] = 1
+                    self.strict_[i, j] = 1
                 else:
                     mol_i = mol_a.getMolecule()
                     mol_j = mol_b.getMolecule()
@@ -250,12 +250,9 @@ class ClusterMaker():
                     pyO3A = rdMolAlign.GetO3A(prbMol = mol_i, refMol = mol_j)
                     score = pyO3A.Align()
                     
-                    self.sim_data_[i, j] = score
-                    self.sim_data_[j, i] = score
-                    print(score)
-        
-
-        return self.sim_data_
+                    self.strict_[i, j] = score
+                    self.strict_[j, i] = score
+        return self.strict_.to_numpy_2D_array()
 
     def calculateMCES(self, db_mol):
         '''
@@ -292,14 +289,14 @@ class ClusterMaker():
         '''
         return self.sim_data_
     
-    def cluster_spectral(self, num_clusters, auto : bool = False, verbose : bool = True) -> tuple[dict, dict]:
+    def cluster_spectral(self, num_clusters, interactive : bool = True, verbose : bool = True) -> tuple[dict, dict]:
         '''
         This function creates clusters using the K-Means algorithm. The function uses the KMeans algorithm implemented in
         the sklearn package.
 
         Parameters:
             self: object, the ClusterMaker object.
-            auto: bool, if true the auto cutoff is taken
+            interactive: bool, if true then one can decide # TODO
             verbose: bool, if true more verbosity is outputed
 
         Returns:
@@ -355,9 +352,9 @@ class ClusterMaker():
             raise ValueError("Invalid algorithm. Please use 'dbscan' or 'K-Means'")
         
         if algorithm == "dbscan":
-            self.sub_arrs_, self.sub_IDs_ = self.cluster_interactive(auto=interactive, verbose = verbose)
+            self.sub_arrs_, self.sub_IDs_ = self.cluster_interactive(interactive = interactive, verbose = verbose)
         elif algorithm == "spectral":
-            self.sub_arrs_, self.sub_IDs_ = self.cluster_spectral(auto = interactive, verbose = verbose, num_clusters = num_clusters)
+            self.sub_arrs_, self.sub_IDs_ = self.cluster_spectral(interactive = interactive, verbose = verbose, num_clusters = num_clusters)
 
         clustering = "{"
 
@@ -396,7 +393,7 @@ class ClusterMaker():
         '''
         return self.db_mol
     
-    def cluster_interactive(self, verbose: bool = True, auto : bool = False) -> tuple[dict, dict]:
+    def cluster_interactive(self, verbose: bool = True, interactive : bool = True) -> tuple[dict, dict]:
         '''
         Function to inspect distance data and self assign the clustering neighbour distance cutoff. This is the current default.
         # TODO: Implement automatic version and version where one can specify number of clusters
@@ -404,7 +401,7 @@ class ClusterMaker():
             Parameters:
                 self: object, the ClusterMaker object.
                 verbose: bool, if true more verbosity is outputed
-                auto: bool, if true the auto cutoff is taken
+                interactive: bool, if False the auto cutoff is taken
 
             Returns:
                 sub_arrs: dict, n_arr subdivided into dict of cluster number keys
@@ -432,7 +429,7 @@ class ClusterMaker():
 
         print("auto_cutoff was determined to be ", auto_cutoff)
 
-        if auto:
+        if not interactive:
             print("Taking auto cutoff as auto is set to True.")
             user_cutoff = auto_cutoff
         else:
@@ -779,16 +776,16 @@ if __name__ == "__main__":
     #matplotlib.use('TkAgg')
     #TODO: fix plots so that they are saved in the correct Folder
     cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', 
-                          loadMatrix_ = False,
-                          loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy", 
-                          method_ = "MCSS", 
-                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_c_MCMS_spectral.json", 
+                          loadMatrix_ = True,
+                          loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/FFS_cluster04.npy", 
+                          method_ = "Shape", 
+                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/FFS_cluster04_c_shape.json", 
                           parallel_ = 6,
-                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/plots/')
+                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/plots/')
 
     print(cmaker.ID_List_)
-    cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04.npy")
-    cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_IDs.json")
-    cmaker.create_clusters(algorithm="spectral", num_clusters=10)
+    cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/FFS_cluster04.npy")
+    cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/FFS_cluster04_IDs.json")
+    cmaker.create_clusters(algorithm="dbscan", num_clusters=10, interactive = True)
 
     
