@@ -1,4 +1,4 @@
-{"Cluster_0" : ["ligands_12", "ligands_13", "ligands_15", "ligands_16", "ligands_19", "ligands_24", "ligands_3", "ligands_4", "ligands_9"],
-"Cluster_1" : ["ligands_10", "ligands_14", "ligands_25", "ligands_27", "ligands_28", "ligands_29", "ligands_30", "ligands_5"],
-"Cluster_2" : ["ligands_11", "ligands_17", "ligands_18", "ligands_20", "ligands_22", "ligands_23", "ligands_8"],
+{"Cluster_0" : ["ligands_10", "ligands_14", "ligands_25", "ligands_27", "ligands_28", "ligands_29", "ligands_30", "ligands_5"],
+"Cluster_1" : ["ligands_11", "ligands_17", "ligands_18", "ligands_20", "ligands_22", "ligands_23", "ligands_8"],
+"Cluster_2" : ["ligands_12", "ligands_13", "ligands_15", "ligands_16", "ligands_19", "ligands_24", "ligands_3", "ligands_4", "ligands_9"],
 "Cluster_3" : ["ligands_1", "ligands_2", "ligands_21", "ligands_26", "ligands_6", "ligands_7"]}

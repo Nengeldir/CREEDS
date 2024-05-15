@@ -124,8 +124,11 @@ def randomize_cluster_based(cluster_map : str,
     '''
     # create random overlapping sets of numLigands
     # num Ligands is meant without the overlap
-
-    cluster_json = json.load(open(cluster_map))
+    if os.path.exists(cluster_map):
+        cluster_json = json.load(open(cluster_map))
+    else:
+        print("Cluster map does not exist")
+        return -1
     
     # check how many clusters were generated
     # if there are too many Ligands in one cluster depending on the mode split them randomly or throw an exception to the user
@@ -235,9 +238,9 @@ def randomize_cluster_based(cluster_map : str,
             edge_count += 1
             cost += min
             if len(simulation_ligands[simulation_keys[a]]) > len(simulation_ligands[simulation_keys[b]]):
-                simulation_ligands[simulation_keys[b]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][1])
+                simulation_ligands[simulation_keys[b]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][0])
             else:
-                simulation_ligands[simulation_keys[a]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][0])
+                simulation_ligands[simulation_keys[a]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][1])
 
         print("additional cost ", cost)
         print("parent array ", parent)
@@ -397,42 +400,14 @@ def randomize(output_dir : str,
                 f.write(SVG)
     
 if __name__ == '__main__':
-
-    # randomize_cluster_based(
-    #     cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/clustersFFS_cluster04_c_MCMS.json',
-    #     sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
-    #     output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst/',
-    #     simpleOverlap = False,
-    #     distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04.npy',
-    #     ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/FFS_cluster04_IDs.json')
-    # randomize(
-    #     output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_nc/simulation_files/',
-    #     sdf_files = '/localhome/lconconi/CREEDS/input/FreeSolv/',
-    #     ligand_list = None,
-    #     cluster_map_file = '/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json',
-    #     cluster_name = "Cluster_4",
-    #     max_num_Simulations = 10
-    # )$
-    # Cluster Noisy
-    randomize_cluster_based(
-        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_noise/FFS_cluster04_c_noise.json',
-        sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
-        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_noise/',
-        simpleOverlap = True,
-        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_noise/FFS_cluster04.npy',
-        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_noise/FFS_cluster04_IDs.json',
-        fix_ligand_num = False,
-        fix_simulation_num = False,
-        numLigands_per_sim= 20
-        )
     # Cluster MST
     randomize_cluster_based(
-        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/FFS_cluster04_c_mst_noise.json',        
+        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise.json',        
         sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
         output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/',
         simpleOverlap = False,
         distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/FFS_cluster04.npy',
-        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/FFS_cluster04_IDs.json',
+        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise_ids.json',
         fix_ligand_num = False,
         fix_simulation_num = False,
         numLigands_per_sim= 20
