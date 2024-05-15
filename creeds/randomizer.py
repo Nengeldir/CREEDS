@@ -234,8 +234,10 @@ def randomize_cluster_based(cluster_map : str,
             union(a, b, parent)
             edge_count += 1
             cost += min
-            simulation_ligands[simulation_keys[a]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][1])
-            simulation_ligands[simulation_keys[b]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][0])
+            if len(simulation_ligands[simulation_keys[a]]) > len(simulation_ligands[simulation_keys[b]]):
+                simulation_ligands[simulation_keys[b]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][1])
+            else:
+                simulation_ligands[simulation_keys[a]].append(coresponding_ligands[(simulation_keys[a], simulation_keys[b])][0])
 
         print("additional cost ", cost)
         print("parent array ", parent)
@@ -410,14 +412,27 @@ if __name__ == '__main__':
     #     cluster_map_file = '/localhome/lconconi/CREEDS/creeds/output/FFS/clustersFFS_MCMS.json',
     #     cluster_name = "Cluster_4",
     #     max_num_Simulations = 10
-    # )
+    # )$
+    # Cluster Noisy
     randomize_cluster_based(
-        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_c_MCMS_spectral.json',
-        sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/sdf_files/',
-        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/',
+        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_noise/FFS_cluster04_c_noise.json',
+        sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
+        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_noise/',
         simpleOverlap = True,
-        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spetral/FFS_cluster04.npy',
-        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_spectral/FFS_cluster04_IDs.json',
+        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_noise/FFS_cluster04.npy',
+        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_noise/FFS_cluster04_IDs.json',
+        fix_ligand_num = False,
+        fix_simulation_num = False,
+        numLigands_per_sim= 20
+        )
+    # Cluster MST
+    randomize_cluster_based(
+        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/FFS_cluster04_c_mst_noise.json',        
+        sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
+        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/',
+        simpleOverlap = False,
+        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/FFS_cluster04.npy',
+        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/FFS_cluster04_IDs.json',
         fix_ligand_num = False,
         fix_simulation_num = False,
         numLigands_per_sim= 20

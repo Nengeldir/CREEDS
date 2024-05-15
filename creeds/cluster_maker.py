@@ -775,17 +775,15 @@ if __name__ == "__main__":
 
     #matplotlib.use('TkAgg')
     #TODO: fix plots so that they are saved in the correct Folder
-    cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files', 
-                          loadMatrix_ = True,
-                          loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/FFS_cluster04.npy", 
-                          method_ = "Shape", 
-                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/FFS_cluster04_c_shape.json", 
+    cmaker = ClusterMaker('/localhome/lconconi/CREEDS/input/p38/', 
+                          loadMatrix_ = False,
+                          loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/p38/distance_matrix.npy", 
+                          method_ = "MCSS", 
+                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/p38/p38_clusters_spectral.json", 
                           parallel_ = 6,
-                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/plots/')
+                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/p38/plots/')
 
     print(cmaker.ID_List_)
-    cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/FFS_cluster04.npy")
-    cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_shape/FFS_cluster04_IDs.json")
-    cmaker.create_clusters(algorithm="dbscan", num_clusters=10, interactive = True)
-
-    
+    cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/p38/distance_matrix.npy")
+    cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/p38/p38_ids.json")
+    cmaker.create_clusters(algorithm="spectral", interactive = True, num_clusters=4)
