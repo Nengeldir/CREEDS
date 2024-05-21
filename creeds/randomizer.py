@@ -401,16 +401,36 @@ def randomize(output_dir : str,
     
 if __name__ == '__main__':
     # Cluster MST
-    randomize_cluster_based(
-        cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise.json',        
-        sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
-        output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/',
-        simpleOverlap = False,
-        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/FFS_cluster04.npy',
-        ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise_ids.json',
-        fix_ligand_num = False,
-        fix_simulation_num = False,
-        numLigands_per_sim= 20
-        )
+    # randomize_cluster_based(
+    #     cluster_map = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise.json',        
+    #     sdf_files = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
+    #     output_dir = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/',
+    #     simpleOverlap = False,
+    #     distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/FFS_cluster04.npy',
+    #     ID_file= '/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise_ids.json',
+    #     fix_ligand_num = False,
+    #     fix_simulation_num = False,
+    #     numLigands_per_sim= 20
+    #     )
     
-    #randomizeCluster('..//', 'clusters.json', 'randomized/', )
+    # Cluster p38 spectral
+    randomize_cluster_based(
+        cluster_map='/localhome/lconconi/CREEDS/creeds/output/p38/p38_clusters_spectral.json',
+        sdf_files = '/localhome/lconconi/CREEDS/input/p38/',
+        output_dir = '/localhome/lconconi/CREEDS/creeds/output/p38/spectral',
+        simpleOverlap = True,
+        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/p38/distance_matrix.npy',
+        ID_file= '/localhome/lconconi/CREEDS/creeds/output/p38/p38_ids.json',
+        fix_ligand_num=False,
+        fix_simulation_num=False)
+
+    #Cluster p38 dbscan
+    randomize_cluster_based(
+        cluster_map='/localhome/lconconi/CREEDS/creeds/output/p38/p38_clusters_dbscan.json',
+        sdf_files = '/localhome/lconconi/CREEDS/input/p38/',
+        output_dir = '/localhome/lconconi/CREEDS/creeds/output/p38/dbscan',
+        simpleOverlap = True,
+        distanceMatrix = '/localhome/lconconi/CREEDS/creeds/output/p38/distance_matrix.npy',
+        ID_file= '/localhome/lconconi/CREEDS/creeds/output/p38/p38_ids.json',
+        fix_ligand_num=False,
+        fix_simulation_num=False)

@@ -772,17 +772,17 @@ if __name__ == "__main__":
     #matplotlib.use('TkAgg')
 
     # DBSCAN Clustering Cluster 04 for MST all ligands
-    print("Starting DBSCAN Clustering for Cluster 04 for MST all ligands")
-    cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
-                          loadMatrix_=True,
-                          loadFile_="/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/distance_matrix.npy",
-                          method_="MCSS",
-                          output_file_="/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise.json",
-                          parallel_=6,
-                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/plots/')
-    cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/distance_matrix.npy")
-    cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise_ids.json")
-    cmaker.create_clusters(algorithm="dbscan", interactive=True)
+    # print("Starting DBSCAN Clustering for Cluster 04 for MST all ligands")
+    # cmaker = ClusterMaker('/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c/sdf_files/',
+    #                       loadMatrix_=True,
+    #                       loadFile_="/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/distance_matrix.npy",
+    #                       method_="MCSS",
+    #                       output_file_="/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise.json",
+    #                       parallel_=6,
+    #                       plot_folder_='/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/plots/')
+    # cmaker.saveDistanceMatrix("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/distance_matrix.npy")
+    # cmaker.writeIdList("/localhome/lconconi/CREEDS/creeds/output/FFS_cluster04_c_mst_noise/cluster04_c_mst_noise_ids.json")
+    # cmaker.create_clusters(algorithm="dbscan", interactive=True)
 
     # DBSCAN Clustering p38
     print("Starting DBSCAN Clustering for p38")
@@ -799,12 +799,12 @@ if __name__ == "__main__":
     cmaker.create_clusters(algorithm="dbscan", interactive = True)
 
     # Spectral Clustering p38
-    print("Starting Spectral Clustering for p38")
-    cmaker = ClusterMaker('/localhome/lconconi/CREEDS/input/p38/', 
-                          loadMatrix_ = True,
-                          loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/p38/distance_matrix.npy", 
-                          method_ = "MCSS", 
-                          output_file_ = "/localhome/lconconi/CREEDS/creeds/output/p38/p38_clusters_spectral.json", 
-                          parallel_ = 6,
-                          plot_folder_='/localhome/lconconi/CREEDS/creeds/output/p38/plots/')
-    cmaker.create_clusters(algorithm="spectral", interactive = True, num_clusters=4)
+    # print("Starting Spectral Clustering for p38")
+    # cmaker = ClusterMaker('/localhome/lconconi/CREEDS/input/p38/', 
+    #                       loadMatrix_ = True,
+    #                       loadFile_ = "/localhome/lconconi/CREEDS/creeds/output/p38/distance_matrix.npy", 
+    #                       method_ = "MCSS", 
+    #                       output_file_ = "/localhome/lconconi/CREEDS/creeds/output/p38/p38_clusters_spectral.json", 
+    #                       parallel_ = 6,
+    #                       plot_folder_='/localhome/lconconi/CREEDS/creeds/output/p38/plots/')
+    # cmaker.create_clusters(algorithm="spectral", interactive = True, num_clusters=4)
