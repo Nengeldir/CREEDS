@@ -552,9 +552,8 @@ def _dbscan(X, max_searches = 10, plot_path = 'plots/', **kwargs):
                     # we have not found a good match for the ligand: Throw an exception
                     if j == max_searches - 1:
                         raise ValueError("For ligand " +  str(i) + " no good fit was found after " + str(max_searches) + " searches")
-                    
-        n_noise_ = list(labels).count(-1)
-        print("New Number of noise points ", n_noise_)
+    else:
+        print("losing %d ligands", n_noise_)
 
     return labels, core_samples_mask, n_clusters_
 
