@@ -71,7 +71,7 @@ def alignClusters(ClusterMap : str, concatSDF_dir : str, output_dir: str, return
             rd_kit = [mol for mol in molecules]
             SVG = Chem.Draw.MolsToGridImage(rd_kit, useSVG=True, molsPerRow=10)
             with open(output_dir + "visualization/" + cluster_name + ".svg", "w") as f:
-                f.write(SVG)
+                f.write(SVG.string())
 
 def find(i, parent):
     '''
@@ -302,7 +302,7 @@ def randomize_cluster_based(cluster_map : str,
             svg_path = os.path.join(svg_folder_path, cluster_name + ".svg")
 
             with open(svg_path, "w") as f:
-                f.write(SVG)
+                f.write(str(SVG))
 
   
 def randomize(output_dir : str,
@@ -397,7 +397,7 @@ def randomize(output_dir : str,
             rd_kit = [mol for mol in molecules]
             SVG = Chem.Draw.MolsToGridImage(rd_kit, useSVG=True, molsPerRow=10)
             with open(output_dir + "visualization/" + cluster_name + ".svg", "w") as f:
-                f.write(SVG)
+                f.write(str(SVG))
     
 if __name__ == '__main__':
 
