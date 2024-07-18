@@ -130,7 +130,9 @@ def _find_max_curvature(x, dists, plot_path='plots/', **kwargs):
     plt.suptitle("Clustering cutoff at y-value of highest curvature",
                  size = 'medium', style = 'italic')
     plt.xlabel("Normalized ligands, sorted by distance")
-    plt.ylabel("Normalized nearest neighbor distance")
+    plt.ylabel("Cummulative distribution function of neighbor distance")
+    plt.xticks(np.linspace(0.0, 1.0, 11, endpoint=True))
+    plt.yticks(np.linspace(0.0, 1.0, 11, endpoint=True))
     cutoff_raw_path = os.path.join(plot_path, 'cutoff_raw.pdf')
     plt.savefig(cutoff_raw_path, pad_inches=0.3)
     
@@ -146,7 +148,9 @@ def _find_max_curvature(x, dists, plot_path='plots/', **kwargs):
     plt.suptitle("Clustering cutoff at y-value of highest curvature",
                  size = 'medium', style = 'italic')
     plt.xlabel("Normalized ligands, sorted by distance")
-    plt.ylabel("Normalized nearest neighbor distance")
+    plt.ylabel("Cummulative distribution function of neighbor distance")
+    plt.xticks(np.linspace(0.0, 1.0, 11, endpoint=True))
+    plt.yticks(np.linspace(0.0, 1.0, 11, endpoint=True))
     cutoff_fit_path = os.path.join(plot_path, 'cutoff_fit.pdf')
     plt.savefig(cutoff_fit_path, pad_inches=0.3)
 

@@ -7,6 +7,7 @@ from tempfile import TemporaryFile
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.backends.backend_pdf
 import matplotlib.ticker as tick
 
@@ -659,7 +660,7 @@ class Plotter():
                 labels: calculated by DBSCAN
                 
             Optional Parameters:
-                cmap: color to plot with, default is matplotlib 'CMRmap'
+                cmap: color to plot with, default is matplotlib 'inferno'
                 tick_interval: default produces 15 or fewer ticks.
                 
             Returns:
@@ -697,10 +698,11 @@ class Plotter():
         # Black removed and is used for noise instead.
         unique_labels = set(labels)
         colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
+
         # Make the labels a 2D array that can be plotted
         labels_arr = labels.reshape(N, 1)
         # Define discrete colors for N clusters.
-        cmap = plt.get_cmap('inferno')
+        cmap = LinearSegmentedColormap.from_list(cmap, colors, N=len(colors))
         # Plot. Had 0.04 for the aspect before
         psm = ax.imshow(labels_arr, cmap=cmap, rasterized=True, aspect= 'auto')
         
